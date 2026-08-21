@@ -140,6 +140,16 @@ class ApplicationLog:
         ).fetchone()
         return row is not None and row["status"] in {"applied", "already_applied"}
 
+    def status_for(self, vacancy_id: str, resume_id: str) -> str | None:
+        row = self.conn.execute(
+            """
+            SELECT status FROM applications
+            WHERE vacancy_id = ? AND resume_id = ?
+            """,
+            (vacancy_id, resume_id),
+        ).fetchone()
+        return str(row["status"]) if row is not None else None
+
     def was_vacancy_processed(self, vacancy_id: str) -> bool:
         row = self.conn.execute(
             """

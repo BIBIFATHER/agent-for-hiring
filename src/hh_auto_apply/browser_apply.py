@@ -316,6 +316,16 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                     for card in cards:
                         stats.seen += 1
                         vacancy_id = card["id"]
+                        if selection_mode == "mass_v1" and log.status_for(vacancy_id, resume_key) in {
+                            "applied",
+                            "already_applied",
+                            "manual_required",
+                            "error",
+                            "external_ats_skip",
+                            "frequent_response_warning",
+                            "unconfirmed_click",
+                        }:
+                            continue
                         if log.was_processed(vacancy_id, resume_key) or log.was_vacancy_processed(vacancy_id):
                             continue
                         stats.new += 1
