@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from hh_auto_apply.apply import skip_reason
-from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, select_segment_template
+from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, mass_basic_relevance_decision, select_segment_template
 from hh_auto_apply.browser_apply import browser_search_params, diagnose_click_failure, is_external_ats_url, negotiation_item_to_vacancy, no_card_response_vacancy_page_status, response_flow_status, submit_cover_letter_if_present
 from hh_auto_apply.llm import choose_cover_letter
 from hh_auto_apply.config import Settings
@@ -31,6 +31,7 @@ class FlowTests(unittest.TestCase):
             browser_headless=False,
             browser_search_url="",
             search_profiles_file=Path("search_profiles.json"),
+            selection_mode="quality",
             cover_letter_rules_file=Path("cover_letter_rules.json"),
             llm_enabled=False,
             openai_api_key="",
@@ -467,6 +468,36 @@ class FlowTests(unittest.TestCase):
             with self.subTest(title=title):
                 decision = evaluate_vacancy({"name": title, "employer": {"name": "Company"}}, DEFAULT_RULES)
                 self.assertEqual(decision.status, "APPROVED")
+
+    def test_mass_mode_allows_target_role_without_pnl_literal(self) -> None:
+        vacancy = {
+            "name": "Head of Sales",
+            "description": "Управление отделом продаж, рост выручки, стратегия и развитие каналов продаж.",
+            "employer": {"name": "Company"},
+        }
+        decision = mass_basic_relevance_decision(vacancy, DEFAULT_RULES)
+        self.assertEqual(decision.status, "APPROVED")
+        self.assertIn("mass_v1", decision.reason)
+
+    def test_mass_mode_blocks_hard_exclusions(self) -> None:
+        cases = [
+            {
+                "name": "KAM / Account Manager",
+                "description": "Работа с ключевыми клиентами.",
+            },
+            {
+                "name": "Ассистент коммерческого директора",
+                "description": "Помощь руководителю.",
+            },
+            {
+                "name": "Директор по продажам",
+                "description": "Страхование и банковский сектор.",
+            },
+        ]
+        for vacancy in cases:
+            with self.subTest(title=vacancy["name"]):
+                decision = mass_basic_relevance_decision({**vacancy, "employer": {"name": "Company"}}, DEFAULT_RULES)
+                self.assertEqual(decision.status, "SKIP")
 
     def test_skip_test_required(self) -> None:
         reason = skip_reason(

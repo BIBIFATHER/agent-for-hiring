@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlencode
 
-from .cover_letter import evaluate_vacancy, load_rules
+from .cover_letter import evaluate_vacancy, load_rules, mass_basic_relevance_decision
 from .llm import choose_cover_letter
 from .storage import ApplicationLog
 
@@ -284,6 +284,7 @@ def negotiation_item_to_vacancy(item: dict[str, Any]) -> dict[str, Any] | None:
 def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
     profiles = load_search_profiles(settings)
     rules = load_rules(settings.cover_letter_rules_file)
+    selection_mode = str(getattr(settings, "selection_mode", "quality") or "quality")
     sync_playwright = ensure_playwright()
     stats = BrowserStats()
     settings.browser_profile_dir.mkdir(parents=True, exist_ok=True)
@@ -327,9 +328,16 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                             "alternate_url": card["url"],
                         }
                         fingerprint = log.compute_vacancy_fingerprint(vacancy)
-                        if log.was_fingerprint_seen(fingerprint):
+                        fingerprint_processed = (
+                            log.was_fingerprint_processed(fingerprint)
+                            if selection_mode == "mass_v1"
+                            else log.was_fingerprint_seen(fingerprint)
+                        )
+                        if fingerprint_processed:
                             continue
                         decision = evaluate_vacancy(vacancy, rules)
+                        if decision.status == "SKIP" and selection_mode == "mass_v1":
+                            decision = mass_decision_with_page_fallback(page, vacancy, card, rules)
                         if decision.status == "SKIP":
                             log.record(vacancy, resume_key, "skipped", reason=reason_prefix + decision.reason)
                             stats.skipped += 1
@@ -794,6 +802,21 @@ def response_flow_status(page: Any) -> str:
     if has_manual_task_or_questions(page):
         return "manual_required"
     return ""
+
+
+def mass_decision_with_page_fallback(page: Any, vacancy: dict[str, Any], card: dict[str, Any], rules: dict[str, Any]) -> Any:
+    decision = mass_basic_relevance_decision(vacancy, rules)
+    if decision.status == "APPROVED":
+        return decision
+    if "mass hard" in decision.reason:
+        return decision
+    if not goto_with_retry(page, card["url"]):
+        return decision
+    wait_like_human(page)
+    vacancy["page_text"] = extract_vacancy_page_text(page)
+    if handle_captcha_pause(page):
+        return decision
+    return mass_basic_relevance_decision(vacancy, rules)
 
 
 def no_card_response_vacancy_page_status(page: Any) -> str:

@@ -387,6 +387,138 @@ def semantic_gate_decision(text: str, rules: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+MASS_TARGET_TITLE_PATTERNS = [
+    "commercial director",
+    "chief commercial officer",
+    "директор по продажам",
+    "sales director",
+    "head of sales",
+    "руководитель отдела продаж",
+    "руководитель продаж",
+    "директор по развитию",
+    "business development director",
+    "head of business development",
+    "коммерческий директор",
+    "cco",
+    "роп",
+]
+
+MASS_ADJACENT_TITLE_PATTERNS = [
+    "директор направления",
+    "руководитель направления",
+    "директор бизнес-направления",
+    "руководитель бизнес-направления",
+    "операционный директор",
+    "исполнительный директор",
+    "директор филиала",
+    "региональный директор",
+    "business unit director",
+    "business unit head",
+    "head of business unit",
+    "head of growth",
+    "revenue director",
+    "chief revenue officer",
+    "head of revenue",
+    "coo",
+    "cro",
+]
+
+MASS_HARD_TITLE_PATTERNS = [
+    "менеджер по продажам",
+    "sales manager",
+    "account manager",
+    "key account",
+    "kam",
+    "специалист",
+    "ассистент",
+    "помощник",
+    "стажер",
+    "junior",
+    "агент",
+    "риелтор",
+    "маркетолог",
+    "hr",
+    "юрист",
+    "бухгалтер",
+    "аналитик",
+    "cfo",
+    "cto",
+    "cpo",
+]
+
+MASS_HARD_TEXT_PATTERNS = [
+    "банк",
+    "банковский сектор",
+    "страхование",
+    "страховой",
+    "инвестиционная компания",
+    "инвестиции",
+    "финансовый сектор",
+    "личные холодные продажи",
+    "самостоятельный поиск клиентов",
+    "только процент",
+    "агентская схема",
+]
+
+MASS_BASIC_SCOPE_PATTERNS = [
+    "команда",
+    "управление отделом",
+    "руководство отделом",
+    "руководство командой",
+    "подчинении",
+    "продажи",
+    "выручка",
+    "p&l",
+    "коммерческий результат",
+    "развитие бизнеса",
+    "каналы продаж",
+    "масштабирование",
+    "запуск направления",
+    "стратегия",
+    "team",
+    "sales",
+    "revenue",
+    "commercial",
+    "business development",
+    "scaling",
+    "launch",
+]
+
+
+def mass_basic_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:
+    rules = rules or DEFAULT_RULES
+    title = str(vacancy.get("name", "")).lower()
+    text = " ".join(
+        str(vacancy.get(key, ""))
+        for key in ("name", "description", "snippet", "page_text", "employer")
+    ).lower()
+    if isinstance(vacancy.get("employer"), dict):
+        text += " " + str(vacancy["employer"].get("name", "")).lower()
+
+    for pattern in MASS_HARD_TITLE_PATTERNS:
+        if pattern in title:
+            return CoverLetterDecision("SKIP", None, f"mass hard title exclusion: {pattern}")
+    for pattern in MASS_HARD_TEXT_PATTERNS:
+        if pattern in text:
+            return CoverLetterDecision("SKIP", None, f"mass hard exclusion: {pattern}")
+
+    if any(pattern in title for pattern in MASS_TARGET_TITLE_PATTERNS):
+        cover_letter = build_cover_letter(rules, vacancy)
+        return CoverLetterDecision("APPROVED", cover_letter, "selection_mode=mass_v1; scenario=target_role")
+
+    adjacent_title = any(pattern in title for pattern in MASS_ADJACENT_TITLE_PATTERNS)
+    basic_scope = [pattern for pattern in MASS_BASIC_SCOPE_PATTERNS if pattern in text]
+    if adjacent_title and basic_scope:
+        cover_letter = build_cover_letter(rules, vacancy)
+        return CoverLetterDecision(
+            "APPROVED",
+            cover_letter,
+            "selection_mode=mass_v1; scenario=adjacent_role; basic_scope=" + ",".join(basic_scope[:8]),
+        )
+
+    return CoverLetterDecision("SKIP", None, "mass basic relevance not matched")
+
+
 def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:
     rules = rules or DEFAULT_RULES
     title = str(vacancy.get("name", "")).lower()

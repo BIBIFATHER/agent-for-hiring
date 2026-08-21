@@ -52,6 +52,7 @@ class Settings:
     browser_headless: bool
     browser_search_url: str
     search_profiles_file: Path
+    selection_mode: str
     cover_letter_rules_file: Path
     llm_enabled: bool
     openai_api_key: str
@@ -109,6 +110,7 @@ class Settings:
             browser_headless=bool_env("HH_BROWSER_HEADLESS", True),
             browser_search_url=os.environ.get("HH_BROWSER_SEARCH_URL", ""),
             search_profiles_file=search_profiles_file,
+            selection_mode=os.environ.get("HH_SELECTION_MODE", "quality").strip() or "quality",
             cover_letter_rules_file=cover_letter_rules_file,
             llm_enabled=bool_env("HH_LLM_ENABLED", False),
             openai_api_key=os.environ.get("OPENAI_API_KEY", ""),
