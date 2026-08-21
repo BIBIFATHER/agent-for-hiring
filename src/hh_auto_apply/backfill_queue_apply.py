@@ -23,6 +23,7 @@ from .browser_apply import (
     wait_for_hh_confirmation,
     wait_like_human,
 )
+from .keyword_detector import detect_cover_letter_keyword_instruction, ensure_cover_letter_contains_keyword
 from .cover_letter import load_rules
 from .llm import choose_cover_letter
 from .storage import ApplicationLog
@@ -50,6 +51,9 @@ class QueueApplyStats:
     manual_required: int = 0
     skipped_terminal: int = 0
     errors: int = 0
+    keyword_detector_llm_calls: int = 0
+    keyword_detector_input_chars: int = 0
+    keyword_detector_input_tokens: int = 0
     opened_timings: list[float] = field(default_factory=list)
     results: list[dict[str, Any]] = field(default_factory=list)
 
@@ -110,6 +114,9 @@ def browser_apply_backfill_queue(settings: Any, log: ApplicationLog) -> dict[str
         "manual_required": stats.manual_required,
         "skipped_terminal": stats.skipped_terminal,
         "errors": stats.errors,
+        "keyword_detector_llm_calls": stats.keyword_detector_llm_calls,
+        "keyword_detector_input_chars": stats.keyword_detector_input_chars,
+        "keyword_detector_input_tokens": stats.keyword_detector_input_tokens,
         "average_time_per_opened_vacancy": round(statistics.mean(stats.opened_timings), 2) if stats.opened_timings else 0,
         "median_time_per_opened_vacancy": round(statistics.median(stats.opened_timings), 2) if stats.opened_timings else 0,
         "queue_size_remaining": remaining,
@@ -127,6 +134,9 @@ def browser_apply_backfill_queue(settings: Any, log: ApplicationLog) -> dict[str
         f"manual_required={report['manual_required']}, "
         f"skipped_terminal={report['skipped_terminal']}, "
         f"errors={report['errors']}, "
+        f"keyword_detector_llm_calls={report['keyword_detector_llm_calls']}, "
+        f"keyword_detector_input_chars={report['keyword_detector_input_chars']}, "
+        f"keyword_detector_input_tokens={report['keyword_detector_input_tokens']}, "
         f"avg_opened_s={report['average_time_per_opened_vacancy']}, "
         f"median_opened_s={report['median_time_per_opened_vacancy']}, "
         f"queue_size_remaining={report['queue_size_remaining']}"
@@ -206,6 +216,21 @@ def apply_one_queue_item(
         print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
         return
 
+    keyword_instruction = detect_cover_letter_keyword_instruction(vacancy.get("page_text", ""), settings)
+    stats.keyword_detector_llm_calls += keyword_instruction.llm_calls
+    stats.keyword_detector_input_chars += keyword_instruction.input_chars
+    stats.keyword_detector_input_tokens += keyword_instruction.input_tokens
+    if keyword_instruction.has_instruction and not keyword_instruction.keyword:
+        reason = reason_prefix + f"cover letter keyword/instruction required; {keyword_instruction.reason}"
+        log.record(vacancy, resume_id, "manual_required", reason=reason)
+        stats.manual_required += 1
+        finish_opened(stats, started)
+        result = result_entry(item, "manual_required", reason)
+        stats.results.append(result)
+        mark_progress(progress_path, progress, vacancy_id, result)
+        print(f"MANUAL {vacancy_id}: cover letter keyword/instruction required")
+        return
+
     letter_decision = choose_cover_letter(settings, log, vacancy, rules)
     if letter_decision.status == "SKIP":
         log.record(vacancy, resume_id, "skipped", reason=reason_prefix + f"llm_skip: {letter_decision.reason}")
@@ -218,6 +243,18 @@ def apply_one_queue_item(
         return
 
     cover_letter = settings.cover_letter or letter_decision.cover_letter or ""
+    if keyword_instruction.keyword:
+        cover_letter = ensure_cover_letter_contains_keyword(cover_letter, keyword_instruction)
+        if keyword_instruction.keyword not in cover_letter:
+            reason = reason_prefix + "cover letter keyword/instruction required; keyword missing after letter preparation"
+            log.record(vacancy, resume_id, "manual_required", reason=reason)
+            stats.manual_required += 1
+            finish_opened(stats, started)
+            result = result_entry(item, "manual_required", reason)
+            stats.results.append(result)
+            mark_progress(progress_path, progress, vacancy_id, result)
+            print(f"MANUAL {vacancy_id}: cover letter keyword missing")
+            return
     outcome = click_response(page)
     if outcome == "opened":
         handle_captcha_pause(page)

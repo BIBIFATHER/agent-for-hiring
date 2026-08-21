@@ -14,6 +14,7 @@ from typing import Any
 from urllib.parse import urlparse, urlencode
 
 from .cover_letter import evaluate_vacancy, load_rules, mass_basic_relevance_decision, mass_card_relevance_decision
+from .keyword_detector import detect_cover_letter_keyword_instruction, ensure_cover_letter_contains_keyword
 from .llm import choose_cover_letter
 from .storage import ApplicationLog
 
@@ -59,6 +60,17 @@ class BrowserStats:
     filtered_before_open: int = 0
     pages_opened: int = 0
     likely_apply: int = 0
+    keyword_detector_llm_calls: int = 0
+    keyword_detector_input_chars: int = 0
+    keyword_detector_input_tokens: int = 0
+
+
+@dataclass(frozen=True)
+class CoverPreparation:
+    status: str
+    cover_letter: str = ""
+    source: str = ""
+    reason: str = ""
 
 
 def ensure_playwright() -> Any:
@@ -100,6 +112,36 @@ def load_search_profiles(settings: Any) -> list[dict[str, Any]]:
             "browser_search_url": settings.browser_search_url,
         }
     ]
+
+
+def prepare_cover_letter_for_submit(
+    settings: Any,
+    log: ApplicationLog,
+    vacancy: dict[str, Any],
+    rules: dict[str, Any],
+    decision: Any,
+    stats: Any,
+) -> CoverPreparation:
+    keyword_instruction = detect_cover_letter_keyword_instruction(vacancy.get("page_text", ""), settings)
+    stats.keyword_detector_llm_calls += keyword_instruction.llm_calls
+    stats.keyword_detector_input_chars += keyword_instruction.input_chars
+    stats.keyword_detector_input_tokens += keyword_instruction.input_tokens
+    if keyword_instruction.has_instruction and not keyword_instruction.keyword:
+        return CoverPreparation("manual_required", reason=f"cover letter keyword/instruction required; {keyword_instruction.reason}")
+
+    letter_decision = choose_cover_letter(settings, log, vacancy, rules)
+    if letter_decision.status == "SKIP":
+        return CoverPreparation("skipped", reason=f"llm_skip: {letter_decision.reason}")
+
+    cover_letter = settings.cover_letter or letter_decision.cover_letter or decision.cover_letter or ""
+    if keyword_instruction.keyword:
+        cover_letter = ensure_cover_letter_contains_keyword(cover_letter, keyword_instruction)
+        if keyword_instruction.keyword not in cover_letter:
+            return CoverPreparation("manual_required", reason="cover letter keyword/instruction required; keyword missing after letter preparation")
+        reason = f"{letter_decision.reason}; keyword_instruction={keyword_instruction.reason}"
+    else:
+        reason = letter_decision.reason
+    return CoverPreparation("approved", cover_letter=cover_letter, source=letter_decision.source, reason=reason)
 
 
 def build_search_url(settings: Any, page: int = 0, profile: dict[str, Any] | None = None) -> str:
@@ -432,17 +474,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                             log.record(vacancy, resume_key, "browser_dry_run", reason=reason_prefix + "browser dry run, no click sent")
                             stats.dry_run += 1
                             total_applications += 1
-                            letter_decision = type("LetterDecision", (), {"cover_letter": "", "source": "dry_run", "reason": "browser dry run"})()
                             print(f"DRY {vacancy_id}: {card['name']}")
-                        else:
-                            letter_decision = choose_cover_letter(settings, log, vacancy, rules)
-                            if letter_decision.status == "SKIP":
-                                log.record(vacancy, resume_key, "skipped", reason=reason_prefix + f"llm_skip: {letter_decision.reason}")
-                                stats.skipped += 1
-                                print(f"SKIP {vacancy_id}: llm_skip {letter_decision.reason}")
-                                continue
-
-                        cover_letter = settings.cover_letter or letter_decision.cover_letter or decision.cover_letter or ""
                         response_url = card.get("response_url") or ""
                         if response_url:
                             if not goto_with_retry(page, card["url"]):
@@ -512,6 +544,18 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                 print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
                                 continue
 
+                            cover_preparation = prepare_cover_letter_for_submit(settings, log, vacancy, rules, decision, stats)
+                            if cover_preparation.status == "manual_required":
+                                log.record(vacancy, resume_key, "manual_required", reason=reason_prefix + cover_preparation.reason)
+                                stats.manual_required += 1
+                                print(f"MANUAL {vacancy_id}: {cover_preparation.reason}")
+                                continue
+                            if cover_preparation.status == "skipped":
+                                log.record(vacancy, resume_key, "skipped", reason=reason_prefix + cover_preparation.reason)
+                                stats.skipped += 1
+                                print(f"SKIP {vacancy_id}: {cover_preparation.reason}")
+                                continue
+                            cover_letter = cover_preparation.cover_letter
                             submit_result = submit_cover_letter_if_present(page, cover_letter)
                             if submit_result == "manual_required":
                                 favorite_added = add_to_favorites(page, vacancy_id)
@@ -551,7 +595,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                         vacancy,
                                         resume_key,
                                         "applied",
-                                        reason=reason_prefix + f"confirmed in browser; cover_source={letter_decision.source}; cover_reason={letter_decision.reason}",
+                                        reason=reason_prefix + f"confirmed in browser; cover_source={cover_preparation.source}; cover_reason={cover_preparation.reason}",
                                     )
                                     stats.clicked += 1
                                     total_applications += 1
@@ -586,7 +630,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                 vacancy,
                                 resume_key,
                                 "unconfirmed_click",
-                                reason=reason_prefix + f"submitted response page but HH confirmation was not detected; cover_source={letter_decision.source}; cover_reason={letter_decision.reason}",
+                                reason=reason_prefix + f"submitted response page but HH confirmation was not detected; cover_source={cover_preparation.source}; cover_reason={cover_preparation.reason}",
                             )
                             stats.unconfirmed_click += 1
                             print(f"UNCONFIRMED {vacancy_id}: {card['name']}")
@@ -633,6 +677,20 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                     print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
                                     continue
 
+                                cover_preparation = prepare_cover_letter_for_submit(settings, log, vacancy, rules, decision, stats)
+                                if cover_preparation.status == "manual_required":
+                                    close_response_modal(page)
+                                    log.record(vacancy, resume_key, "manual_required", reason=reason_prefix + cover_preparation.reason)
+                                    stats.manual_required += 1
+                                    print(f"MANUAL {vacancy_id}: {cover_preparation.reason}")
+                                    continue
+                                if cover_preparation.status == "skipped":
+                                    close_response_modal(page)
+                                    log.record(vacancy, resume_key, "skipped", reason=reason_prefix + cover_preparation.reason)
+                                    stats.skipped += 1
+                                    print(f"SKIP {vacancy_id}: {cover_preparation.reason}")
+                                    continue
+                                cover_letter = cover_preparation.cover_letter
                                 submit_result = submit_cover_letter_if_present(page, cover_letter)
                                 if submit_result == "submitted":
                                     handle_captcha_pause(page)
@@ -649,7 +707,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                             vacancy,
                                             resume_key,
                                             "applied",
-                                            reason=reason_prefix + f"confirmed in browser; cover_source={letter_decision.source}; cover_reason={letter_decision.reason}",
+                                            reason=reason_prefix + f"confirmed in browser; cover_source={cover_preparation.source}; cover_reason={cover_preparation.reason}",
                                         )
                                         stats.clicked += 1
                                         total_applications += 1
@@ -696,7 +754,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                     vacancy,
                                     resume_key,
                                     "unconfirmed_click",
-                                    reason=reason_prefix + f"clicked response in browser but HH confirmation was not detected; cover_source={letter_decision.source}; cover_reason={letter_decision.reason}",
+                                    reason=reason_prefix + f"clicked response in browser but HH confirmation was not detected; cover_source={cover_preparation.source}; cover_reason={cover_preparation.reason}",
                                 )
                                 stats.unconfirmed_click += 1
                                 print(f"UNCONFIRMED {vacancy_id}: {card['name']}")

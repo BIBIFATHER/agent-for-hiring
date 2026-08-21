@@ -8,6 +8,7 @@ import unittest
 from hh_auto_apply.apply import skip_reason
 from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, mass_basic_relevance_decision, mass_card_relevance_decision, mass_hard_title_matches, select_segment_template
 from hh_auto_apply.browser_apply import browser_search_params, diagnose_click_failure, is_external_ats_url, negotiation_item_to_vacancy, no_card_response_vacancy_page_status, response_flow_status, submit_cover_letter_if_present
+from hh_auto_apply.keyword_detector import detect_cover_letter_keyword_instruction, ensure_cover_letter_contains_keyword
 from hh_auto_apply.llm import choose_cover_letter
 from hh_auto_apply.config import Settings
 from hh_auto_apply.storage import ApplicationLog
@@ -371,6 +372,29 @@ class FlowTests(unittest.TestCase):
         page = Page()
         self.assertEqual(submit_cover_letter_if_present(page, ""), "manual_required")
         self.assertFalse(page.textarea_touched)
+
+    def test_keyword_detector_has_zero_cost_without_trigger(self) -> None:
+        decision = detect_cover_letter_keyword_instruction("Обычное описание вакансии про продажи и CRM.")
+        self.assertFalse(decision.has_instruction)
+        self.assertEqual(decision.llm_calls, 0)
+        self.assertEqual(decision.input_chars, 0)
+        self.assertEqual(decision.input_tokens, 0)
+
+    def test_keyword_detector_extracts_quoted_keyword(self) -> None:
+        text = 'Чтобы убедиться, что вы дочитали вакансию, укажите в сопроводительном письме слово «маржа».'
+        decision = detect_cover_letter_keyword_instruction(text)
+        self.assertTrue(decision.has_instruction)
+        self.assertEqual(decision.keyword, "маржа")
+        self.assertEqual(decision.llm_calls, 0)
+        self.assertEqual(decision.input_chars, 0)
+        self.assertEqual(decision.input_tokens, 0)
+        self.assertIn(decision.keyword, decision.fragment)
+
+    def test_keyword_detector_adds_missing_keyword_to_letter(self) -> None:
+        text = 'В конце письма укажите фразу "unit economics".'
+        decision = detect_cover_letter_keyword_instruction(text)
+        letter = ensure_cover_letter_contains_keyword("Здравствуйте. Готов обсудить роль.", decision)
+        self.assertIn("unit economics", letter)
 
     def test_already_applied_response_page_short_circuits_without_cover_letter(self) -> None:
         class BodyLocator:

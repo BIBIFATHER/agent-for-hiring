@@ -160,6 +160,9 @@ def command_browser_apply(_: argparse.Namespace) -> None:
         f"already_applied={stats.already_applied}, "
         f"unconfirmed_click={stats.unconfirmed_click}, "
         f"frequent_response_warning={stats.frequent_response_warning}, "
+        f"keyword_detector_llm_calls={stats.keyword_detector_llm_calls}, "
+        f"keyword_detector_input_chars={stats.keyword_detector_input_chars}, "
+        f"keyword_detector_input_tokens={stats.keyword_detector_input_tokens}, "
         f"skipped={stats.skipped}, errors={stats.errors}"
     )
 
