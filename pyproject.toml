@@ -1,0 +1,16 @@
+[project]
+name = "agent-for-hiring"
+version = "0.1.0"
+description = "HH workflow agent for filtered vacancies and browser fallback"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "playwright>=1.46.0",
+]
+
+[project.scripts]
+hh-auto-apply = "hh_auto_apply.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
