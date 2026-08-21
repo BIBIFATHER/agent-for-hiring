@@ -191,7 +191,14 @@ def launch_browser_context(pw: Any, settings: Any, *, headless: bool) -> tuple[A
         return context, None
     except Exception as exc:
         message = str(exc)
-        if "ProcessSingleton" not in message and "SingletonLock" not in message:
+        lower_message = message.lower()
+        profile_lock_markers = (
+            "processsingleton",
+            "singletonlock",
+            "profile appears to be in use",
+            "locked the profile",
+        )
+        if not any(marker in lower_message for marker in profile_lock_markers):
             raise
         temp_dir = tempfile.TemporaryDirectory()
         profile_copy = Path(temp_dir.name) / "browser-profile"
