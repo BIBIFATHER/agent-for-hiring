@@ -1,0 +1,48 @@
+{
+  "confirmed": [
+    {
+      "id": "revenue_scope_1b",
+      "text": "commercial function with revenue up to 1 billion rubles"
+    },
+    {
+      "id": "direct_reports_12",
+      "text": "12 direct reports"
+    },
+    {
+      "id": "pnl_ownership",
+      "text": "ownership of profit and commercial direction economics"
+    },
+    {
+      "id": "budgeting",
+      "text": "annual and monthly budgeting"
+    },
+    {
+      "id": "pricing_margin",
+      "text": "pricing and discount policy management"
+    },
+    {
+      "id": "forecast_kpi",
+      "text": "forecasting, plan-vs-actual, KPI and bonus system"
+    },
+    {
+      "id": "b2b_distribution",
+      "text": "B2B and federal distribution"
+    },
+    {
+      "id": "international_markets",
+      "text": "international markets: CIS, Europe, USA"
+    },
+    {
+      "id": "export_channels",
+      "text": "independent launch of export channels"
+    },
+    {
+      "id": "sales_growth_2025",
+      "text": "sales growth +36% in 2025"
+    },
+    {
+      "id": "client_base_growth_2025",
+      "text": "client base growth +25% in 2025"
+    }
+  ]
+}

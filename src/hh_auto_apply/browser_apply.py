@@ -326,7 +326,8 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                             "employer": {"name": card["employer"]},
                             "alternate_url": card["url"],
                         }
-                        if log.was_fingerprint_processed(log.compute_vacancy_fingerprint(vacancy)):
+                        fingerprint = log.compute_vacancy_fingerprint(vacancy)
+                        if log.was_fingerprint_seen(fingerprint):
                             continue
                         decision = evaluate_vacancy(vacancy, rules)
                         if decision.status == "SKIP":

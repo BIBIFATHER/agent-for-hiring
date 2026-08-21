@@ -51,7 +51,8 @@ def apply_to_new_vacancies(client: HHClient, log: ApplicationLog) -> ApplyStats:
 
             stats.new += 1
             vacancy = client.vacancy(vacancy_id)
-            if log.was_fingerprint_processed(log.compute_vacancy_fingerprint(vacancy)):
+            fingerprint = log.compute_vacancy_fingerprint(vacancy)
+            if log.was_fingerprint_seen(fingerprint):
                 continue
             decision = evaluate_vacancy(vacancy, rules)
             reason = skip_reason(vacancy, decision, settings)

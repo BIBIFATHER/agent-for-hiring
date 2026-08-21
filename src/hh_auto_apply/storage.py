@@ -164,6 +164,17 @@ class ApplicationLog:
         ).fetchone()
         return row is not None
 
+    def was_fingerprint_seen(self, vacancy_fingerprint: str) -> bool:
+        row = self.conn.execute(
+            """
+            SELECT status FROM applications
+            WHERE vacancy_fingerprint = ?
+            LIMIT 1
+            """,
+            (vacancy_fingerprint,),
+        ).fetchone()
+        return row is not None
+
     def llm_calls_today(self, day: str | None = None) -> int:
         day = day or datetime.now().date().isoformat()
         row = self.conn.execute("SELECT calls FROM llm_usage WHERE day = ?", (day,)).fetchone()

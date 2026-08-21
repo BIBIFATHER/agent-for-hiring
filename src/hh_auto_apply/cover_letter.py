@@ -189,8 +189,32 @@ class CoverLetterDecision:
 
 def load_rules(rules_path: Path | None) -> dict[str, Any]:
     if rules_path and rules_path.exists():
-        return json.loads(rules_path.read_text(encoding="utf-8"))
+        rules = json.loads(rules_path.read_text(encoding="utf-8"))
+        rules["_rules_path"] = str(rules_path)
+        return rules
     return DEFAULT_RULES
+
+
+def load_json_file(path: Path | None, default: dict[str, Any] | None = None) -> dict[str, Any]:
+    if path and path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return default or {}
+
+
+def candidate_profile_path(rules_path: Path | None = None) -> Path:
+    base = rules_path.parent if rules_path else Path.cwd()
+    return base / "candidate_profile.json"
+
+
+def achievement_bank_path(rules_path: Path | None = None) -> Path:
+    base = rules_path.parent if rules_path else Path.cwd()
+    return base / "achievement_bank.json"
+
+
+def confirmed_achievement_texts(rules_path: Path | None = None) -> list[str]:
+    bank = load_json_file(achievement_bank_path(rules_path))
+    confirmed = bank.get("confirmed", [])
+    return [str(item.get("text", "")).strip() for item in confirmed if isinstance(item, dict) and item.get("text")]
 
 
 def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:
@@ -229,11 +253,14 @@ def build_cover_letter(rules: dict[str, Any], vacancy: dict[str, Any]) -> str:
     segment = select_segment_entry(rules, title)
     opening = pick_stable_variant(vacancy, rules.get("opening_variants") or DEFAULT_RULES["opening_variants"], "opening")
     closing = pick_stable_variant(vacancy, rules.get("closing_variants") or DEFAULT_RULES["closing_variants"], "closing")
+    rules_path = Path(str(rules.get("_rules_path"))) if rules.get("_rules_path") else None
+    profile = load_json_file(candidate_profile_path(rules_path))
+    achievement_texts = confirmed_achievement_texts(rules_path)
 
     if segment:
         body = choose_segment_body(segment, vacancy)
     else:
-        body = str(rules.get("default_template", "")).strip() or str(rules.get("short_pitch", "")).strip()
+        body = build_profile_body(profile, achievement_texts, rules)
 
     parts = [part.strip() for part in [opening, body, closing] if str(part).strip()]
     if not parts:
@@ -255,6 +282,25 @@ def select_segment_template(rules: dict[str, Any], vacancy_title: str) -> str:
     if not segment:
         return str(rules.get("default_template", "")).strip()
     return choose_segment_body(segment, {"name": vacancy_title})
+
+
+def build_profile_body(profile: dict[str, Any], achievements: list[str], rules: dict[str, Any]) -> str:
+    team = profile.get("team_size") or {}
+    markets = profile.get("markets") or []
+    skills = profile.get("skills") or []
+    role_bits = profile.get("target_roles") or []
+    picks = [text for text in achievements[:4] if text]
+    lines = [
+        "Добрый день. Коммерческий руководитель с подтвержденным опытом в B2B и управлении продажами.",
+        f"Команда: {team.get('direct', 0)} direct / {team.get('total', 0)} total. Рынки: {', '.join(str(x) for x in markets)}.",
+        f"Фокус: {', '.join(str(x) for x in skills)}.",
+    ]
+    if picks:
+        lines.append("Подтвержденные достижения: " + "; ".join(picks) + ".")
+    if role_bits:
+        lines.append("Целевые роли: " + ", ".join(str(x) for x in role_bits[:6]) + ".")
+    fallback = str(rules.get("default_template", "")).strip()
+    return "\n".join(line for line in lines if line) or fallback or str(rules.get("short_pitch", "")).strip()
 
 
 def choose_segment_body(segment: dict[str, Any], vacancy: dict[str, Any]) -> str:

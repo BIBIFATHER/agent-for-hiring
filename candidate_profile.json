@@ -1,0 +1,96 @@
+{
+  "target_roles": [
+    "commercial director",
+    "cco",
+    "head of sales",
+    "sales director",
+    "business development director",
+    "head of business development",
+    "coo",
+    "executive director",
+    "руководитель отдела продаж",
+    "руководитель продаж",
+    "директор по продажам",
+    "директор по развитию",
+    "директор направления",
+    "директор филиала",
+    "директор бизнес-направления",
+    "операционный директор"
+  ],
+  "acceptable_roles": [
+    "commercial director",
+    "cco",
+    "head of sales",
+    "sales director",
+    "business development director",
+    "head of business development",
+    "coo",
+    "executive director",
+    "руководитель отдела продаж",
+    "руководитель продаж",
+    "директор по продажам",
+    "директор по развитию",
+    "директор направления",
+    "директор филиала",
+    "директор бизнес-направления",
+    "операционный директор"
+  ],
+  "excluded_industries": [
+    "banking",
+    "insurance",
+    "investment",
+    "financial services",
+    "banks",
+    "страхование",
+    "банк",
+    "инвестиции"
+  ],
+  "achievements": [
+    "commercial function with revenue up to 1 billion rubles",
+    "12 direct reports",
+    "ownership of profit and commercial direction economics",
+    "annual and monthly budgeting",
+    "pricing and discount policy management",
+    "forecasting, plan-vs-actual, KPI and bonus system",
+    "B2B and federal distribution",
+    "international markets: CIS, Europe, USA",
+    "independent launch of export channels",
+    "sales growth +36% in 2025",
+    "client base growth +25% in 2025"
+  ],
+  "responsibilities": [
+    "build commercial systems",
+    "scale sales",
+    "launch new directions",
+    "manage profit and margin",
+    "own budgeting and forecasting",
+    "set KPI and incentive systems",
+    "develop distribution channels",
+    "use automation and AI in commercial operations"
+  ],
+  "team_size": {
+    "direct": 12,
+    "total": 30
+  },
+  "revenue_scope_rub": 1000000000,
+  "markets": ["Россия", "СНГ", "Европа", "США"],
+  "skills": [
+    "P&L",
+    "pricing",
+    "forecasting",
+    "маржинальность",
+    "бюджетирование",
+    "KPI",
+    "масштабирование продаж"
+  ],
+  "work_format_priority": [
+    "remote",
+    "hybrid"
+  ],
+  "forbidden_claims": [
+    "managed P&L above one billion rubles",
+    "had more than 12 direct reports",
+    "worked in banking or insurance",
+    "ran an investment business"
+  ]
+}

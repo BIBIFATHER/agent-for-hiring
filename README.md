@@ -184,6 +184,8 @@ The agent does not start from zero on every run. It keeps memory of discovered v
 
 - `data/history.json` is the human-readable journal.
 - `data/applications.sqlite` is the durable source for deduplication, sync, and analysis.
+- `candidate_profile.json` is the canonical candidate profile.
+- `achievement_bank.json` is the confirmed achievement bank for cover letters.
 
 ### What is stored
 
