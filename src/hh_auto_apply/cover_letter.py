@@ -393,11 +393,21 @@ MASS_TARGET_TITLE_PATTERNS = [
     "chief commercial officer",
     "директор по продажам",
     "sales director",
+    "international sales",
+    "head of international sales",
+    "head of offline sales",
     "head of sales",
     "руководитель отдела продаж",
     "руководитель продаж",
+    "руководитель департамента продаж",
+    "руководитель направления продаж",
+    "руководитель по развитию продаж",
+    "руководитель группы продаж",
+    "руководитель международных продаж",
     "директор по развитию",
     "business development director",
+    "new business director",
+    "account director",
     "head of business development",
     "коммерческий директор",
     "cco",
@@ -420,6 +430,10 @@ MASS_ADJACENT_TITLE_PATTERNS = [
     "revenue director",
     "chief revenue officer",
     "head of revenue",
+    "sales lead",
+    "regional sales lead",
+    "distribution director",
+    "руководитель направления дистрибуции",
     "coo",
     "cro",
 ]
@@ -438,6 +452,9 @@ MASS_HARD_TITLE_PATTERNS = [
     "агент",
     "риелтор",
     "маркетолог",
+    "креативный директор",
+    "brand director",
+    "chief brand officer",
     "hr",
     "юрист",
     "бухгалтер",
@@ -483,6 +500,37 @@ MASS_BASIC_SCOPE_PATTERNS = [
     "business development",
     "scaling",
     "launch",
+]
+
+MASS_SENIOR_TITLE_PATTERNS = [
+    "директор",
+    "director",
+    "руководитель",
+    "head",
+    "lead",
+    "тимлид",
+]
+
+MASS_COMMERCIAL_TITLE_PATTERNS = [
+    "sales",
+    "продаж",
+    "commercial",
+    "коммер",
+    "business development",
+    "new business",
+    "account director",
+    "distribution",
+    "дистрибуц",
+    "revenue",
+    "growth",
+    "partnership",
+    "партнер",
+    "партнёр",
+    "филиал",
+    "филиалов",
+    "операцион",
+    "operations",
+    "coo",
 ]
 
 
@@ -550,6 +598,19 @@ def mass_card_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any] 
             build_cover_letter(rules, vacancy),
             "selection_mode=mass_v1.1; decision=likely_apply; source=card; scenario=adjacent_role; basic_scope="
             + ",".join(basic_scope[:8]),
+        )
+
+    senior_title = [pattern for pattern in MASS_SENIOR_TITLE_PATTERNS if pattern in title]
+    commercial_title = [pattern for pattern in MASS_COMMERCIAL_TITLE_PATTERNS if pattern in title]
+    if senior_title and commercial_title:
+        return CoverLetterDecision(
+            "APPROVED",
+            build_cover_letter(rules, vacancy),
+            "selection_mode=mass_v1.1; decision=likely_apply; source=card; scenario=senior_adjacent_uncertain; "
+            "senior_title="
+            + ",".join(senior_title[:4])
+            + "; commercial_title="
+            + ",".join(commercial_title[:6]),
         )
 
     return CoverLetterDecision("SKIP", None, "mass_v1.1 card relevance not matched")

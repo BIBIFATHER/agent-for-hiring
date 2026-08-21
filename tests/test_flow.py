@@ -534,6 +534,29 @@ class FlowTests(unittest.TestCase):
         self.assertIn("mass_v1.1", decision.reason)
         self.assertIn("likely_apply", decision.reason)
 
+    def test_mass_v1_1_card_decision_opens_senior_adjacent_roles_when_uncertain(self) -> None:
+        titles = [
+            "Head of International Sales",
+            "Руководитель департамента продаж",
+            "Руководитель направления продаж",
+            "Руководитель по развитию продаж",
+            "Руководитель группы продаж",
+            "Head of Offline Sales",
+            "Account Director / New Business Director / РОП",
+            "Sales Director",
+            "B2C Regional Sales Lead",
+            "Операционный директор",
+            "Руководитель направления дистрибуции",
+        ]
+        for title in titles:
+            with self.subTest(title=title):
+                decision = mass_card_relevance_decision(
+                    {"name": title, "snippet": "", "employer": {"name": "Company"}},
+                    DEFAULT_RULES,
+                )
+                self.assertEqual(decision.status, "APPROVED")
+                self.assertIn("likely_apply", decision.reason)
+
     def test_mass_hard_title_abbreviation_does_not_match_director_substring(self) -> None:
         self.assertFalse(mass_hard_title_matches("account director / sales director", "cto"))
         self.assertTrue(mass_hard_title_matches("cto / technical director", "cto"))
