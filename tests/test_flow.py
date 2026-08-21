@@ -149,6 +149,19 @@ class FlowTests(unittest.TestCase):
 
         self.assertEqual(no_card_response_vacancy_page_status(Page()), "already_applied")
 
+    def test_resume_visibility_checkpoint_is_manual_required(self) -> None:
+        class Body:
+            def inner_text(self, timeout: int) -> str:
+                return 'Чтобы откликнуться на эту вакансию, поменяйте видимость резюме на "Видно компаниям-клиентам HeadHunter".'
+
+        class Page:
+            def locator(self, selector: str) -> Body:
+                if selector != "body":
+                    raise AssertionError(selector)
+                return Body()
+
+        self.assertEqual(response_flow_status(Page()), "manual_required")
+
     def test_no_card_response_page_status_keeps_true_missing_button(self) -> None:
         class Locator:
             @property
