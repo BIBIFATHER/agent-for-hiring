@@ -7,6 +7,7 @@ import secrets
 import webbrowser
 
 from .apply import apply_to_new_vacancies
+from .backfill_queue_apply import browser_apply_backfill_queue
 from .backfill_search import browser_backfill_search
 from .browser_apply import browser_apply, browser_login, browser_sync_sent
 from .config import Settings
@@ -172,6 +173,15 @@ def command_browser_backfill_search(_: argparse.Namespace) -> None:
         log.close()
 
 
+def command_browser_backfill_apply(_: argparse.Namespace) -> None:
+    settings = Settings.from_env(Path.cwd())
+    log = ApplicationLog(settings.db_file)
+    try:
+        browser_apply_backfill_queue(settings, log)
+    finally:
+        log.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="hh-auto-apply")
     subparsers = parser.add_subparsers(required=True)
@@ -199,6 +209,9 @@ def main() -> None:
 
     browser_backfill_cmd = subparsers.add_parser("browser-backfill-search", help="Search-only browser backfill queue builder")
     browser_backfill_cmd.set_defaults(func=command_browser_backfill_search)
+
+    browser_backfill_apply_cmd = subparsers.add_parser("browser-backfill-apply", help="Apply a bounded batch from the backfill queue")
+    browser_backfill_apply_cmd.set_defaults(func=command_browser_backfill_apply)
 
     log = subparsers.add_parser("log", help="Show recent application log")
     log.add_argument("--limit", type=int, default=20)
