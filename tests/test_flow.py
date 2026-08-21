@@ -7,7 +7,7 @@ import unittest
 
 from hh_auto_apply.apply import skip_reason
 from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, select_segment_template
-from hh_auto_apply.browser_apply import browser_search_params, diagnose_click_failure, is_external_ats_url, negotiation_item_to_vacancy, response_flow_status, submit_cover_letter_if_present
+from hh_auto_apply.browser_apply import browser_search_params, diagnose_click_failure, is_external_ats_url, negotiation_item_to_vacancy, no_card_response_vacancy_page_status, response_flow_status, submit_cover_letter_if_present
 from hh_auto_apply.llm import choose_cover_letter
 from hh_auto_apply.config import Settings
 from hh_auto_apply.storage import ApplicationLog
@@ -123,6 +123,40 @@ class FlowTests(unittest.TestCase):
                 return Body()
 
         self.assertEqual(response_flow_status(Page()), "already_applied")
+
+    def test_no_card_response_page_status_detects_already_applied(self) -> None:
+        class Body:
+            def inner_text(self, timeout: int) -> str:
+                return "Вы откликнулись. Отклик другим резюме. Резюме доставлено."
+
+        class Page:
+            def locator(self, selector: str) -> Body:
+                if selector != "body":
+                    raise AssertionError(selector)
+                return Body()
+
+        self.assertEqual(no_card_response_vacancy_page_status(Page()), "already_applied")
+
+    def test_no_card_response_page_status_keeps_true_missing_button(self) -> None:
+        class Locator:
+            @property
+            def first(self):
+                return self
+
+            def inner_text(self, timeout: int) -> str:
+                return "Описание вакансии без отклика."
+
+            def is_visible(self, timeout: int) -> bool:
+                return False
+
+        class Page:
+            def locator(self, selector: str) -> Locator:
+                return Locator()
+
+            def get_by_role(self, role: str, name) -> Locator:
+                return Locator()
+
+        self.assertEqual(no_card_response_vacancy_page_status(Page()), "no_response_button")
 
     def test_negotiation_item_to_vacancy_uses_today_cards_only(self) -> None:
         today_item = {

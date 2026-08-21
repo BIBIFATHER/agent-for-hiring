@@ -336,10 +336,44 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                             print(f"SKIP {vacancy_id}: {decision.reason}")
                             continue
                         if not card["can_apply"]:
-                            log.record(vacancy, resume_key, "skipped", reason=reason_prefix + "no visible response button in browser")
-                            stats.skipped += 1
-                            print(f"SKIP {vacancy_id}: no response button")
-                            continue
+                            if not goto_with_retry(page, card["url"]):
+                                log.record(vacancy, resume_key, "error", reason=reason_prefix + "vacancy page navigation failed")
+                                stats.errors += 1
+                                print(f"ERROR {vacancy_id}: vacancy page navigation failed")
+                                continue
+                            wait_like_human(page)
+                            vacancy["page_text"] = extract_vacancy_page_text(page)
+                            if handle_captcha_pause(page):
+                                log.record(vacancy, resume_key, "manual_required", reason=reason_prefix + "captcha pause")
+                                stats.manual_required += 1
+                                continue
+                            vacancy_page_status = no_card_response_vacancy_page_status(page)
+                            if vacancy_page_status == "already_applied":
+                                log.record(vacancy, resume_key, "already_applied", reason=reason_prefix + "already applied on vacancy page")
+                                stats.already_applied += 1
+                                print(f"ALREADY {vacancy_id}: already applied")
+                                total_applications += 1
+                                continue
+                            if vacancy_page_status == "frequent_response_warning":
+                                log.record(vacancy, resume_key, "frequent_response_warning", reason=reason_prefix + "frequent responses warning on vacancy page")
+                                stats.frequent_response_warning += 1
+                                print(f"PAUSE {vacancy_id}: frequent responses warning")
+                                total_applications += 1
+                                continue
+                            if vacancy_page_status == "manual_required":
+                                favorite_added = add_to_favorites(page, vacancy_id)
+                                reason = reason_prefix + "manual task/questions required on vacancy page"
+                                if favorite_added:
+                                    reason += "; added to favorites"
+                                log.record(vacancy, resume_key, "manual_required", reason=reason)
+                                stats.manual_required += 1
+                                print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
+                                continue
+                            if vacancy_page_status == "no_response_button":
+                                log.record(vacancy, resume_key, "skipped", reason=reason_prefix + "no visible response button in browser")
+                                stats.skipped += 1
+                                print(f"SKIP {vacancy_id}: no response button")
+                                continue
 
                         if settings.dry_run:
                             log.record(vacancy, resume_key, "browser_dry_run", reason=reason_prefix + "browser dry run, no click sent")
@@ -760,6 +794,15 @@ def response_flow_status(page: Any) -> str:
     if has_manual_task_or_questions(page):
         return "manual_required"
     return ""
+
+
+def no_card_response_vacancy_page_status(page: Any) -> str:
+    status = response_flow_status(page)
+    if status in {"already_applied", "frequent_response_warning", "manual_required"}:
+        return status
+    if find_response_button(page) is None:
+        return "no_response_button"
+    return "response_available"
 
 
 def has_manual_task_or_questions(page: Any) -> bool:
