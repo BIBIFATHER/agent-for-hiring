@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -496,7 +497,7 @@ def mass_basic_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any]
         text += " " + str(vacancy["employer"].get("name", "")).lower()
 
     for pattern in MASS_HARD_TITLE_PATTERNS:
-        if pattern in title:
+        if mass_hard_title_matches(title, pattern):
             return CoverLetterDecision("SKIP", None, f"mass hard title exclusion: {pattern}")
     for pattern in MASS_HARD_TEXT_PATTERNS:
         if pattern in text:
@@ -528,7 +529,7 @@ def mass_card_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any] 
     text = " ".join([title, snippet, company])
 
     for pattern in MASS_HARD_TITLE_PATTERNS:
-        if pattern in title:
+        if mass_hard_title_matches(title, pattern):
             return CoverLetterDecision("SKIP", None, f"mass_v1.1 hard title exclusion: {pattern}")
     for pattern in MASS_HARD_TEXT_PATTERNS:
         if pattern in text:
@@ -552,6 +553,12 @@ def mass_card_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any] 
         )
 
     return CoverLetterDecision("SKIP", None, "mass_v1.1 card relevance not matched")
+
+
+def mass_hard_title_matches(title: str, pattern: str) -> bool:
+    if pattern in {"hr", "cfo", "cto", "cpo"}:
+        return re.search(rf"(?<![a-zа-яё]){re.escape(pattern)}(?![a-zа-яё])", title) is not None
+    return pattern in title
 
 
 def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:

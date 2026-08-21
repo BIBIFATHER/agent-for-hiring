@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from hh_auto_apply.apply import skip_reason
-from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, mass_basic_relevance_decision, mass_card_relevance_decision, select_segment_template
+from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, mass_basic_relevance_decision, mass_card_relevance_decision, mass_hard_title_matches, select_segment_template
 from hh_auto_apply.browser_apply import browser_search_params, diagnose_click_failure, is_external_ats_url, negotiation_item_to_vacancy, no_card_response_vacancy_page_status, response_flow_status, submit_cover_letter_if_present
 from hh_auto_apply.llm import choose_cover_letter
 from hh_auto_apply.config import Settings
@@ -533,6 +533,10 @@ class FlowTests(unittest.TestCase):
         self.assertEqual(decision.status, "APPROVED")
         self.assertIn("mass_v1.1", decision.reason)
         self.assertIn("likely_apply", decision.reason)
+
+    def test_mass_hard_title_abbreviation_does_not_match_director_substring(self) -> None:
+        self.assertFalse(mass_hard_title_matches("account director / sales director", "cto"))
+        self.assertTrue(mass_hard_title_matches("cto / technical director", "cto"))
 
     def test_mass_v1_1_card_decision_blocks_hard_skip_before_open(self) -> None:
         vacancy = {
