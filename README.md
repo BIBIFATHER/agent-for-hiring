@@ -106,7 +106,7 @@ hh-auto-apply apply
 
 The MVP uses HH search params from env. Common values:
 
-- `HH_SEARCH_TEXT`: HH search query, e.g. `коммерческий директор OR head of sales OR CCO OR директор по продажам`
+- `HH_SEARCH_TEXT`: HH search query, e.g. `коммерческий директор OR head of sales OR CCO OR директор по продажам OR РОП OR руководитель продаж OR директор по развитию OR руководитель направления OR операционный директор OR исполнительный директор`
 - `HH_SEARCH_AREA`: leave empty for remote/hybrid mass mode; use `1` for Moscow only if city restriction is needed
 - `HH_SEARCH_SCHEDULE`: e.g. `remote`, `fullDay`, `flexible`
 - `HH_SEARCH_EMPLOYMENT`: e.g. `full`, `part`

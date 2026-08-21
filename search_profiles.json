@@ -4,7 +4,7 @@
     "resume_id": "6c4a8974ff07dc4c3c0039ed1f554d41317133",
     "title": "Коммерческий директор / Head of Sales",
     "search": {
-      "text": "\"Коммерческий директор\" OR \"Head of Sales\" OR CCO OR \"директор по продажам\" OR \"руководитель отдела продаж\"",
+      "text": "\"Коммерческий директор\" OR \"Head of Sales\" OR CCO OR \"директор по продажам\" OR \"руководитель отдела продаж\" OR РОП OR \"руководитель продаж\" OR \"директор по развитию\" OR \"руководитель направления\" OR \"операционный директор\" OR \"исполнительный директор\" OR \"директор филиала\" OR \"директор бизнес-направления\" OR \"Business Development\" OR Revenue OR Growth",
       "work_format": ["REMOTE", "HYBRID"],
       "employment_form": ["FULL", "PROJECT"],
       "period": "7",
@@ -16,7 +16,7 @@
     "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
     "title": "Директор по продажам",
     "search": {
-      "text": "\"Директор по продажам\" OR \"руководитель отдела продаж\" OR \"Sales Director\" OR \"Head of Sales\"",
+      "text": "\"Директор по продажам\" OR \"руководитель отдела продаж\" OR \"руководитель продаж\" OR РОП OR \"Sales Director\" OR \"Head of Sales\" OR \"руководитель направления\" OR \"директор по развитию\" OR \"директор филиала\" OR \"директор бизнес-направления\" OR Revenue OR Growth",
       "work_format": ["REMOTE", "HYBRID"],
       "employment_form": ["FULL", "PROJECT"],
       "period": "7",
@@ -28,7 +28,7 @@
     "resume_id": "ff95d816ff090caf370039ed1f4d7235334f66",
     "title": "Директор по развитию бизнеса",
     "search": {
-      "text": "\"Директор по развитию бизнеса\" OR \"Business Development Director\" OR \"Head of Business Development\" OR \"BD Director\" OR партнерства",
+      "text": "\"Директор по развитию бизнеса\" OR \"Business Development Director\" OR \"Head of Business Development\" OR \"BD Director\" OR партнерства OR \"директор по развитию\" OR \"руководитель направления\" OR Revenue OR Growth",
       "work_format": ["REMOTE", "HYBRID"],
       "employment_form": ["FULL", "PROJECT"],
       "period": "7",
@@ -40,7 +40,19 @@
     "resume_id": "acfe2732ff101dca8f0039ed1f6d43444e577a",
     "title": "Коммерческий директор / CCO / Head of Sales",
     "search": {
-      "text": "\"Коммерческий директор\" OR CCO OR \"Chief Commercial Officer\" OR \"Head of Sales\" OR \"Revenue Director\"",
+      "text": "\"Коммерческий директор\" OR CCO OR \"Chief Commercial Officer\" OR \"Head of Sales\" OR \"Revenue Director\" OR РОП OR \"руководитель продаж\" OR \"директор по развитию\" OR \"руководитель направления\" OR \"операционный директор\" OR \"исполнительный директор\" OR \"директор филиала\" OR \"директор бизнес-направления\" OR \"Business Development\" OR Revenue OR Growth",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "7",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "broad-growth",
+    "resume_id": "acfe2732ff101dca8f0039ed1f6d43444e577a",
+    "title": "Широкий поиск: РОП / развитие / операционный контур",
+    "search": {
+      "text": "РОП OR \"руководитель продаж\" OR \"директор по развитию\" OR \"руководитель направления\" OR \"операционный директор\" OR \"исполнительный директор\" OR \"директор филиала\" OR \"директор бизнес-направления\" OR \"Head of Sales\" OR \"Business Development\" OR Revenue OR Growth",
       "work_format": ["REMOTE", "HYBRID"],
       "employment_form": ["FULL", "PROJECT"],
       "period": "7",
