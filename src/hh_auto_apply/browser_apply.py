@@ -896,8 +896,6 @@ def has_manual_task_or_questions(page: Any) -> bool:
         "обязательные вопросы",
         "пройти тест",
         "тест",
-        "поменяйте видимость резюме",
-        "видно компаниям-клиентам headhunter",
     ]
     try:
         text = page.locator("body").inner_text(timeout=1500).lower()
