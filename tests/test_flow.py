@@ -345,6 +345,81 @@ class FlowTests(unittest.TestCase):
                 decision = evaluate_vacancy({"name": title, "employer": {"name": "Company"}}, DEFAULT_RULES)
                 self.assertEqual(decision.status, "SKIP")
 
+    def test_soft_stop_does_not_rescue_weak_roles(self) -> None:
+        cases = [
+            {
+                "name": "Менеджер по продажам",
+                "description": "Личные холодные продажи и самостоятельный поиск клиентов.",
+            },
+            {
+                "name": "Специалист по продажам",
+                "description": "Работа с входящими заявками без управления командой.",
+            },
+            {
+                "name": "Агент по недвижимости",
+                "description": "Агентская модель и самостоятельный поиск клиентов.",
+            },
+            {
+                "name": "Руководитель контент-маркетинга",
+                "description": "Управление контент-планом, редакцией и брендовыми материалами.",
+            },
+            {
+                "name": "Руководитель продуктовой аналитики",
+                "description": "Управление командой аналитиков и отчетность по P&L другого подразделения.",
+            },
+            {
+                "name": "Финансовый директор",
+                "description": "Бухгалтерская отчетность, налоги и казначейство.",
+            },
+            {
+                "name": "HR Director",
+                "description": "Hiring, onboarding and HR operations.",
+            },
+        ]
+        for vacancy in cases:
+            with self.subTest(title=vacancy["name"]):
+                decision = evaluate_vacancy({**vacancy, "employer": {"name": "Company"}}, DEFAULT_RULES)
+                self.assertEqual(decision.status, "SKIP")
+
+    def test_soft_stop_semantic_gate_rescues_strong_commercial_scope(self) -> None:
+        cases = [
+            {
+                "name": "Операционный директор",
+                "description": (
+                    "Управление руководителями коммерческих направлений, ответственность за P&L, "
+                    "рост выручки и масштабирование продаж."
+                ),
+            },
+            {
+                "name": "Head of B2B Growth / Marketing",
+                "description": (
+                    "Team management, revenue growth, business development and channel development strategy."
+                ),
+            },
+            {
+                "name": "Директор бизнес-направления",
+                "description": (
+                    "Ответственность за P&L, стратегия продаж, запуск новых направлений и развитие каналов продаж."
+                ),
+            },
+        ]
+        for vacancy in cases:
+            with self.subTest(title=vacancy["name"]):
+                decision = evaluate_vacancy({**vacancy, "employer": {"name": "Company"}}, DEFAULT_RULES)
+                self.assertEqual(decision.status, "APPROVED")
+                self.assertIsNotNone(decision.cover_letter)
+
+    def test_soft_stop_semantic_gate_records_legacy_reason(self) -> None:
+        vacancy = {
+            "name": "Операционный директор",
+            "description": "Управление руководителями, P&L, рост выручки и масштабирование бизнеса.",
+            "employer": {"name": "Company"},
+        }
+        decision = evaluate_vacancy(vacancy, DEFAULT_RULES)
+        self.assertEqual(decision.status, "APPROVED")
+        self.assertIn("semantic_gate=evaluate", decision.reason)
+        self.assertIn("legacy_reason=title_stop_word_matched", decision.reason)
+
     def test_commercial_director_titles_are_approved(self) -> None:
         for title in [
             "Директор по продажам B2B",

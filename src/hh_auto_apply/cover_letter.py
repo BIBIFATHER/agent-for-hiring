@@ -22,7 +22,6 @@ DEFAULT_RULES = {
         "head of sales",
         "cco",
         "комдир",
-        "операционн",
         "исполнительн",
         "директор филиала",
         "директор направления",
@@ -62,21 +61,12 @@ DEFAULT_RULES = {
         "страховой агент",
     ],
     "title_stop_words": [
-        "маркетинг",
-        "маркетингу",
         "cmo",
-        "продукт",
-        "продукту",
         "cpo",
         "инвестици",
         "инвестициям",
-        "операционн",
-        "coo",
-        "финанс",
-        "финансовый",
         "cfo",
         "персонал",
-        "hr",
         "chro",
         "техническ",
         "cto",
@@ -95,6 +85,144 @@ DEFAULT_RULES = {
         "junior",
         "страховой",
         "оператор",
+    ],
+    "soft_title_stop_words": [
+        "операционн",
+        "coo",
+        "маркетинг",
+        "marketing",
+        "продукт",
+        "product",
+        "финанс",
+        "finance",
+        "hr",
+    ],
+    "semantic_management_signals": [
+        "управление командой",
+        "руководство командой",
+        "управление отделом",
+        "руководство отделом",
+        "управление сотрудниками",
+        "управление руководителями",
+        "руководитель направления",
+        "директор направления",
+        "руководитель подразделения",
+        "директор подразделения",
+        "руководитель бизнес-направления",
+        "директор бизнес-направления",
+        "директор филиала",
+        "операционный директор",
+        "исполнительный директор",
+        "coo",
+        "team management",
+        "head",
+        "director",
+        "business unit head",
+        "division head",
+    ],
+    "semantic_commercial_signal_groups": {
+        "revenue": [
+            "выручка",
+            "рост выручки",
+            "ответственность за выручку",
+            "план по выручке",
+            "выполнение плана продаж",
+            "рост продаж",
+            "коммерческий результат",
+            "revenue",
+            "revenue growth",
+            "sales target",
+            "commercial result",
+        ],
+        "pnl_profitability": [
+            "p&l",
+            "прибыль",
+            "ответственность за прибыль",
+            "финансовый результат",
+            "прибыльность",
+            "маржинальность",
+            "управление маржинальностью",
+            "profitability",
+            "margin",
+            "financial result",
+        ],
+        "pricing": [
+            "pricing",
+            "ценообразование",
+            "ценовая политика",
+            "скидочная политика",
+            "управление ценами",
+        ],
+        "forecasting_budgeting": [
+            "forecasting",
+            "прогнозирование продаж",
+            "прогноз выручки",
+            "бюджетирование",
+            "формирование бюджета",
+            "управление бюджетом",
+            "план-факт",
+        ],
+        "sales_commercial_strategy": [
+            "стратегия продаж",
+            "коммерческая стратегия",
+            "построение системы продаж",
+            "развитие продаж",
+            "управление коммерческой функцией",
+            "sales strategy",
+            "commercial strategy",
+        ],
+        "business_development": [
+            "развитие бизнеса",
+            "business development",
+            "развитие новых направлений",
+            "поиск точек роста",
+            "запуск новых направлений",
+        ],
+        "channels": [
+            "развитие каналов продаж",
+            "дистрибуция",
+            "дилерская сеть",
+            "партнерская сеть",
+            "партнерские каналы",
+            "channel development",
+            "distribution",
+        ],
+        "scaling_launch": [
+            "масштабирование",
+            "масштабирование продаж",
+            "масштабирование бизнеса",
+            "запуск направления",
+            "построение с нуля",
+            "вывод на новые рынки",
+            "launch",
+            "scaling",
+        ],
+        "kpi_performance": [
+            "kpi",
+            "система kpi",
+            "система мотивации",
+            "бонусная система",
+            "показатели эффективности",
+        ],
+    },
+    "semantic_hard_negative_signals": [
+        "менеджер по продажам",
+        "sales manager",
+        "агент",
+        "assistant",
+        "ассистент",
+        "специалист",
+        "стажер",
+        "intern",
+        "junior",
+        "личные холодные продажи",
+        "самостоятельный поиск клиентов",
+        "банк",
+        "банковский сектор",
+        "страхование",
+        "инвестиции",
+        "инвестиционная компания",
+        "финансовый сектор",
     ],
     "max_age_days": 7,
     "daily_llm_limit": 30,
@@ -217,6 +345,48 @@ def confirmed_achievement_texts(rules_path: Path | None = None) -> list[str]:
     return [str(item.get("text", "")).strip() for item in confirmed if isinstance(item, dict) and item.get("text")]
 
 
+def signal_hits(text: str, signals: list[str]) -> list[str]:
+    normalized = text.lower()
+    return [str(signal).lower() for signal in signals if str(signal).lower() in normalized]
+
+
+def commercial_signal_group_hits(text: str, groups: dict[str, list[str]]) -> dict[str, list[str]]:
+    normalized = text.lower()
+    hits: dict[str, list[str]] = {}
+    for group, signals in groups.items():
+        group_hits = [str(signal).lower() for signal in signals if str(signal).lower() in normalized]
+        if group_hits:
+            hits[str(group)] = group_hits
+    return hits
+
+
+def semantic_gate_decision(text: str, rules: dict[str, Any]) -> dict[str, Any]:
+    management_signals = signal_hits(
+        text,
+        rules.get("semantic_management_signals", DEFAULT_RULES["semantic_management_signals"]),
+    )
+    commercial_groups = commercial_signal_group_hits(
+        text,
+        rules.get("semantic_commercial_signal_groups", DEFAULT_RULES["semantic_commercial_signal_groups"]),
+    )
+    hard_negative_signals = signal_hits(
+        text,
+        rules.get("semantic_hard_negative_signals", DEFAULT_RULES["semantic_hard_negative_signals"]),
+    )
+    decision = (
+        "evaluate"
+        if management_signals and len(commercial_groups) >= 2 and not hard_negative_signals
+        else "skip"
+    )
+    return {
+        "decision": decision,
+        "management_signals": management_signals,
+        "commercial_signal_groups": list(commercial_groups),
+        "commercial_signal_hits": commercial_groups,
+        "hard_negative_signals": hard_negative_signals,
+    }
+
+
 def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:
     rules = rules or DEFAULT_RULES
     title = str(vacancy.get("name", "")).lower()
@@ -227,9 +397,47 @@ def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = Non
     if isinstance(vacancy.get("employer"), dict):
         text += " " + str(vacancy["employer"].get("name", "")).lower()
 
+    semantic_rescue_reason = ""
+    soft_title_stop_words = [str(item).lower() for item in rules.get("soft_title_stop_words", DEFAULT_RULES["soft_title_stop_words"])]
     for stop_word in rules.get("title_stop_words", []):
         if stop_word.lower() in title:
+            if stop_word.lower() in soft_title_stop_words:
+                semantic = semantic_gate_decision(text, rules)
+                if semantic["decision"] == "evaluate":
+                    semantic_rescue_reason = (
+                        f"semantic_gate=evaluate; legacy_reason=title_stop_word_matched: {stop_word}; "
+                        f"management_signals={','.join(semantic['management_signals'])}; "
+                        f"commercial_signal_groups={','.join(semantic['commercial_signal_groups'])}"
+                    )
+                    break
+                return CoverLetterDecision(
+                    "SKIP",
+                    None,
+                    f"title stop word matched: {stop_word}; semantic_gate=skip; "
+                    f"management_signals={','.join(semantic['management_signals'])}; "
+                    f"commercial_signal_groups={','.join(semantic['commercial_signal_groups'])}; "
+                    f"hard_negative_signals={','.join(semantic['hard_negative_signals'])}",
+                )
             return CoverLetterDecision("SKIP", None, f"title stop word matched: {stop_word}")
+
+    for stop_word in soft_title_stop_words:
+        if stop_word in title:
+            semantic = semantic_gate_decision(text, rules)
+            if semantic["decision"] == "evaluate":
+                semantic_rescue_reason = (
+                    f"semantic_gate=evaluate; legacy_reason=title_stop_word_matched: {stop_word}; "
+                    f"management_signals={','.join(semantic['management_signals'])}; "
+                    f"commercial_signal_groups={','.join(semantic['commercial_signal_groups'])}"
+                )
+                break
+            return CoverLetterDecision(
+                "SKIP",
+                None,
+                f"title stop word matched: {stop_word}; semantic_gate=skip; "
+                f"management_signals={','.join(semantic['management_signals'])}; "
+                f"commercial_signal_groups={','.join(semantic['commercial_signal_groups'])}; "
+                f"hard_negative_signals={','.join(semantic['hard_negative_signals'])}",
+            )
 
     for stop_word in rules.get("stop_words", []):
         if stop_word.lower() in text:
@@ -239,13 +447,13 @@ def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = Non
         return CoverLetterDecision("SKIP", None, f"older than {rules.get('max_age_days')} days")
 
     title_rules = rules.get("title_must_contain") or rules.get("target_roles", [])
-    if not any(str(role).lower() in title for role in title_rules):
+    if not semantic_rescue_reason and not any(str(role).lower() in title for role in title_rules):
         return CoverLetterDecision("SKIP", None, "title keyword not matched")
 
     cover_letter = build_cover_letter(rules, vacancy)
     if has_banned_phrase(cover_letter, rules.get("banned_phrases", [])):
         return CoverLetterDecision("SKIP", None, "template contains banned phrase")
-    return CoverLetterDecision("APPROVED", cover_letter)
+    return CoverLetterDecision("APPROVED", cover_letter, semantic_rescue_reason)
 
 
 def build_cover_letter(rules: dict[str, Any], vacancy: dict[str, Any]) -> str:
