@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import hashlib
 from pathlib import Path
 import json
 import sqlite3
@@ -48,13 +49,21 @@ class ApplicationLog:
             CREATE TABLE IF NOT EXISTS applications (
                 vacancy_id TEXT NOT NULL,
                 resume_id TEXT NOT NULL,
+                vacancy_fingerprint TEXT,
                 status TEXT NOT NULL,
                 vacancy_name TEXT,
                 employer_name TEXT,
                 url TEXT,
                 reason TEXT,
+                decision_reason TEXT,
+                agent_decision TEXT,
+                user_decision TEXT,
+                fit_score INTEGER,
+                cover_letter TEXT,
+                hh_negotiation_id TEXT,
                 response_status INTEGER,
                 response_body TEXT,
+                funnel_status TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 PRIMARY KEY (vacancy_id, resume_id)
@@ -73,7 +82,43 @@ class ApplicationLog:
             )
             """
         )
+        for column, ddl in [
+            ("vacancy_fingerprint", "TEXT"),
+            ("decision_reason", "TEXT"),
+            ("agent_decision", "TEXT"),
+            ("user_decision", "TEXT"),
+            ("fit_score", "INTEGER"),
+            ("cover_letter", "TEXT"),
+            ("hh_negotiation_id", "TEXT"),
+            ("funnel_status", "TEXT"),
+        ]:
+            try:
+                self.conn.execute(f"ALTER TABLE applications ADD COLUMN {column} {ddl}")
+            except sqlite3.OperationalError:
+                pass
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_applications_fingerprint ON applications(vacancy_fingerprint)")
         self.conn.commit()
+
+    @staticmethod
+    def _normalize(value: Any) -> str:
+        return " ".join(str(value or "").lower().split())
+
+    @classmethod
+    def compute_vacancy_fingerprint(cls, vacancy: dict[str, Any]) -> str:
+        employer = vacancy.get("employer") or {}
+        salary = vacancy.get("salary") or {}
+        location = vacancy.get("area") or vacancy.get("city") or ""
+        description = str(vacancy.get("description") or vacancy.get("snippet") or vacancy.get("responsibility") or "")
+        payload = " | ".join(
+            [
+                cls._normalize(employer.get("name", "") if isinstance(employer, dict) else employer),
+                cls._normalize(vacancy.get("name", "")),
+                cls._normalize(location.get("name", "") if isinstance(location, dict) else location),
+                cls._normalize(json.dumps(salary, sort_keys=True, ensure_ascii=False)),
+                hashlib.sha256(description.encode("utf-8")).hexdigest(),
+            ]
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def _record_history(self, entry: dict[str, Any]) -> None:
         try:
@@ -104,6 +149,18 @@ class ApplicationLog:
             LIMIT 1
             """,
             (vacancy_id,),
+        ).fetchone()
+        return row is not None
+
+    def was_fingerprint_processed(self, vacancy_fingerprint: str) -> bool:
+        row = self.conn.execute(
+            """
+            SELECT status FROM applications
+            WHERE vacancy_fingerprint = ?
+              AND status IN ('applied', 'already_applied', 'invitation', 'interview', 'rejected', 'offer')
+            LIMIT 1
+            """,
+            (vacancy_fingerprint,),
         ).fetchone()
         return row is not None
 
@@ -140,37 +197,62 @@ class ApplicationLog:
         resume_id: str,
         status: str,
         reason: str = "",
+        decision_reason: str = "",
+        agent_decision: str = "",
+        user_decision: str = "",
+        fit_score: int | None = None,
+        cover_letter: str = "",
+        hh_negotiation_id: str = "",
         response_status: int | None = None,
         response_body: str = "",
+        funnel_status: str = "",
     ) -> None:
         now = utc_now()
         employer = vacancy.get("employer") or {}
         vacancy_id = str(vacancy["id"])
         url = vacancy_markdown_url(vacancy_id)
+        vacancy_fingerprint = self.compute_vacancy_fingerprint(vacancy)
         self.conn.execute(
             """
             INSERT INTO applications (
-                vacancy_id, resume_id, status, vacancy_name, employer_name, url,
-                reason, response_status, response_body, created_at, updated_at
+                vacancy_id, resume_id, vacancy_fingerprint, status, vacancy_name, employer_name, url,
+                reason, decision_reason, agent_decision, user_decision, fit_score, cover_letter, hh_negotiation_id,
+                response_status, response_body, funnel_status, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(vacancy_id, resume_id) DO UPDATE SET
+                vacancy_fingerprint=excluded.vacancy_fingerprint,
                 status=excluded.status,
                 reason=excluded.reason,
+                decision_reason=excluded.decision_reason,
+                agent_decision=excluded.agent_decision,
+                user_decision=excluded.user_decision,
+                fit_score=excluded.fit_score,
+                cover_letter=excluded.cover_letter,
+                hh_negotiation_id=excluded.hh_negotiation_id,
                 response_status=excluded.response_status,
                 response_body=excluded.response_body,
+                funnel_status=excluded.funnel_status,
                 updated_at=excluded.updated_at
             """,
             (
                 vacancy_id,
                 resume_id,
+                vacancy_fingerprint,
                 status,
                 vacancy.get("name", ""),
                 employer.get("name", ""),
                 url,
                 reason,
+                decision_reason,
+                agent_decision,
+                user_decision,
+                fit_score,
+                cover_letter[:4000],
+                hh_negotiation_id,
                 response_status,
                 response_body[:4000],
+                funnel_status or status,
                 now,
                 now,
             ),
@@ -180,13 +262,21 @@ class ApplicationLog:
             {
                 "vacancy_id": vacancy_id,
                 "resume_id": resume_id,
+                "vacancy_fingerprint": vacancy_fingerprint,
                 "status": status,
                 "vacancy_name": vacancy.get("name", ""),
                 "employer_name": employer.get("name", ""),
                 "url": url,
                 "reason": reason,
+                "decision_reason": decision_reason,
+                "agent_decision": agent_decision,
+                "user_decision": user_decision,
+                "fit_score": fit_score,
+                "cover_letter": cover_letter[:4000],
+                "hh_negotiation_id": hh_negotiation_id,
                 "response_status": response_status,
                 "response_body": response_body[:4000],
+                "funnel_status": funnel_status or status,
                 "updated_at": now,
             }
         )

@@ -176,6 +176,100 @@ Special browser statuses:
 - `frequent_response_warning`: HH showed a frequent-response warning; the modal is closed and the run continues.
 - `manual_required`: task, test, or mandatory employer questions; the vacancy is added to favorites when possible.
 
+## Memory, Decision Log and Learning from Anton’s Decisions
+
+The agent does not start from zero on every run. It keeps memory of discovered vacancies, decisions, follow-up outcomes, and user feedback so it can avoid repeats and learn what fits this profile.
+
+### Storage layers
+
+- `data/history.json` is the human-readable journal.
+- `data/applications.sqlite` is the durable source for deduplication, sync, and analysis.
+
+### What is stored
+
+The agent stores the final decision, not the click itself.
+
+Vacancy records should include:
+
+- `vacancy_id`
+- `vacancy_fingerprint`
+- `source`
+- `title`
+- `company`
+- `url`
+- `first_seen_at`
+- `last_seen_at`
+- `status`
+- `fit_score`
+- `decision_reason`
+- `cover_letter_status`
+- `application_mode`
+
+### Vacancy fingerprint
+
+`vacancy_id` alone is not enough because employers can republish the same role under a new ID.
+
+Use `vacancy_fingerprint` to dedupe by:
+
+- `employer`
+- `normalized_title`
+- `location`
+- `salary`
+- `description_hash`
+
+This lets the agent detect:
+
+- exact duplicate
+- republished vacancy
+- modified vacancy
+- new role from the same employer
+
+### Funnel after response
+
+Response history should track outcomes, not only actions:
+
+```text
+discovered
+→ scored
+→ approved
+→ applied
+→ viewed
+→ invitation
+→ interview
+→ rejected
+→ offer
+```
+
+This is required to learn which roles, industries, titles, and resume versions actually convert.
+
+### Learning from Anton's decisions
+
+Manual decisions are stored separately as a decision log.
+
+The agent does not automatically retrain after every manual choice. Instead, it keeps Anton's decisions as:
+
+- decision log
+- few-shot examples
+- personal heuristics
+
+These are used in later vacancy evaluations.
+
+### Outcome signals
+
+The agent should analyze:
+
+- which roles lead to invitations
+- which resume versions work better
+- which salary ranges convert
+- which industries reply
+- at which `fit_score` invitations begin
+
+### Status rule
+
+- `click` or opening a vacancy is not an application.
+- a real application is recorded only after confirmed `applied` or HH negotiation sync.
+- every real application must have a linked vacancy, `fit_score`, decision reason, and cover letter text.
+
 Every result is stored in SQLite and mirrored into `data/history.json` for easy pilot review.
 
 ## Cover Letter Rules
