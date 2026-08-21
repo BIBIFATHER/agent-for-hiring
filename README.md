@@ -115,6 +115,16 @@ The MVP uses HH search params from env. Common values:
 - `HH_SEARCH_PER_PAGE`, `HH_SEARCH_PAGES`: pagination limits
 - `HH_SEARCH_PROFILES_FILE`: optional JSON file with per-resume filters. If present, browser mode scans each profile separately and deduplicates by `vacancy_id + resume_id`.
 
+### Targeted browser search profiles
+
+The default browser-first search now uses atomized HH queries instead of broad mixed `OR` queries.
+
+- `search_profiles.json`: active targeted profiles for regular browser runs. These are recent-first, measured one role/query at a time, and exclude the old broad search.
+- `search_profiles_recent.json`: smaller today-only primary profile set for very fast checks.
+- `search_profiles_registry.json`: full lifecycle registry with `primary`, `secondary`, `experimental`, and `disabled` states. It is documentation/config inventory only; browser runs use `search_profiles.json` unless `HH_SEARCH_PROFILES_FILE` points elsewhere.
+
+The current broad growth query is kept in the registry as `disabled` because the audit showed 0% useful precision. Do not use it in the main regular cycle.
+
 ## Data
 
 Local files:

@@ -1,0 +1,237 @@
+[
+  {
+    "id": "commercial-director",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Коммерческий директор\""
+  },
+  {
+    "id": "commercial-director-en",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Commercial Director\""
+  },
+  {
+    "id": "director-sales",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Директор по продажам\""
+  },
+  {
+    "id": "sales-director",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Sales Director\""
+  },
+  {
+    "id": "head-of-sales",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Head of Sales\""
+  },
+  {
+    "id": "head-sales-ru",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Руководитель отдела продаж\""
+  },
+  {
+    "id": "sales-leader-ru",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "\"Руководитель продаж\""
+  },
+  {
+    "id": "rop",
+    "lifecycle": "primary",
+    "tier": 1,
+    "query": "РОП"
+  },
+  {
+    "id": "cco",
+    "lifecycle": "secondary",
+    "tier": 1,
+    "query": "CCO"
+  },
+  {
+    "id": "chief-commercial-officer",
+    "lifecycle": "secondary",
+    "tier": 1,
+    "query": "\"Chief Commercial Officer\""
+  },
+  {
+    "id": "business-unit-director",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Директор бизнес-направления\""
+  },
+  {
+    "id": "business-unit-head-ru",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Руководитель бизнес-направления\""
+  },
+  {
+    "id": "director-direction",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Директор направления\""
+  },
+  {
+    "id": "head-direction",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Руководитель направления\""
+  },
+  {
+    "id": "business-unit-director-en",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Business Unit Director\""
+  },
+  {
+    "id": "business-unit-head-en",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Business Unit Head\""
+  },
+  {
+    "id": "head-business-unit",
+    "lifecycle": "secondary",
+    "tier": 2,
+    "query": "\"Head of Business Unit\""
+  },
+  {
+    "id": "development-director",
+    "lifecycle": "secondary",
+    "tier": 3,
+    "query": "\"Директор по развитию\""
+  },
+  {
+    "id": "business-development-director-ru",
+    "lifecycle": "secondary",
+    "tier": 3,
+    "query": "\"Директор по развитию бизнеса\""
+  },
+  {
+    "id": "business-development-director",
+    "lifecycle": "secondary",
+    "tier": 3,
+    "query": "\"Business Development Director\""
+  },
+  {
+    "id": "head-business-development",
+    "lifecycle": "secondary",
+    "tier": 3,
+    "query": "\"Head of Business Development\""
+  },
+  {
+    "id": "business-development-leader-ru",
+    "lifecycle": "secondary",
+    "tier": 3,
+    "query": "\"Руководитель по развитию бизнеса\""
+  },
+  {
+    "id": "business-development-head-ru",
+    "lifecycle": "secondary",
+    "tier": 3,
+    "query": "\"Руководитель развития бизнеса\""
+  },
+  {
+    "id": "operations-director",
+    "lifecycle": "secondary",
+    "tier": 4,
+    "query": "\"Операционный директор\""
+  },
+  {
+    "id": "coo",
+    "lifecycle": "secondary",
+    "tier": 4,
+    "query": "COO"
+  },
+  {
+    "id": "chief-operating-officer",
+    "lifecycle": "secondary",
+    "tier": 4,
+    "query": "\"Chief Operating Officer\""
+  },
+  {
+    "id": "executive-director-ru",
+    "lifecycle": "secondary",
+    "tier": 4,
+    "query": "\"Исполнительный директор\""
+  },
+  {
+    "id": "executive-director",
+    "lifecycle": "secondary",
+    "tier": 4,
+    "query": "\"Executive Director\""
+  },
+  {
+    "id": "branch-director",
+    "lifecycle": "experimental",
+    "tier": 4,
+    "query": "\"Директор филиала\""
+  },
+  {
+    "id": "branch-head",
+    "lifecycle": "experimental",
+    "tier": 4,
+    "query": "\"Руководитель филиала\""
+  },
+  {
+    "id": "regional-director",
+    "lifecycle": "experimental",
+    "tier": 4,
+    "query": "\"Региональный директор\""
+  },
+  {
+    "id": "revenue-director",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "\"Revenue Director\""
+  },
+  {
+    "id": "head-revenue",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "\"Head of Revenue\""
+  },
+  {
+    "id": "chief-revenue-officer",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "\"Chief Revenue Officer\""
+  },
+  {
+    "id": "cro",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "CRO"
+  },
+  {
+    "id": "head-growth",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "\"Head of Growth\""
+  },
+  {
+    "id": "growth-director",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "\"Growth Director\""
+  },
+  {
+    "id": "director-growth",
+    "lifecycle": "experimental",
+    "tier": 5,
+    "query": "\"Director of Growth\""
+  },
+  {
+    "id": "broad-growth",
+    "lifecycle": "disabled",
+    "tier": 9,
+    "query": "РОП OR \"руководитель продаж\" OR \"директор по развитию\" OR \"руководитель направления\" OR \"операционный директор\" OR \"исполнительный директор\" OR \"директор филиала\" OR \"директор бизнес-направления\" OR \"Head of Sales\" OR \"Business Development\" OR Revenue OR Growth",
+    "disabled_reason": "Audit precision was 0%; keep only for low-frequency exploratory runs."
+  }
+]
