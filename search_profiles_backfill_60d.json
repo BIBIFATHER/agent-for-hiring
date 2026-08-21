@@ -1,0 +1,268 @@
+[
+  {
+    "id": "backfill-head-sales-ru",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Руководитель отдела продаж",
+    "search": {
+      "text": "\"Руководитель отдела продаж\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-rop",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "РОП",
+    "search": {
+      "text": "РОП",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-sales-director-ru",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Директор по продажам",
+    "search": {
+      "text": "\"Директор по продажам\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-sales-director-en",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Sales Director",
+    "search": {
+      "text": "\"Sales Director\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-head-of-sales",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "6c4a8974ff07dc4c3c0039ed1f554d41317133",
+    "title": "Head of Sales",
+    "search": {
+      "text": "\"Head of Sales\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-commercial-director-ru",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "6c4a8974ff07dc4c3c0039ed1f554d41317133",
+    "title": "Коммерческий директор",
+    "search": {
+      "text": "\"Коммерческий директор\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-cco",
+    "lifecycle": "backfill_60d",
+    "tier": 1,
+    "resume_id": "acfe2732ff101dca8f0039ed1f6d43444e577a",
+    "title": "CCO",
+    "search": {
+      "text": "CCO",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-sales-direction-head",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Руководитель направления продаж",
+    "search": {
+      "text": "\"Руководитель направления продаж\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-sales-department-head",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Руководитель департамента продаж",
+    "search": {
+      "text": "\"Руководитель департамента продаж\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-sales-group-head",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Руководитель группы продаж",
+    "search": {
+      "text": "\"Руководитель группы продаж\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-head-business-development",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "ff95d816ff090caf370039ed1f4d7235334f66",
+    "title": "Head of Business Development",
+    "search": {
+      "text": "\"Head of Business Development\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-business-development-director",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "ff95d816ff090caf370039ed1f4d7235334f66",
+    "title": "Business Development Director",
+    "search": {
+      "text": "\"Business Development Director\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-new-business-director",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "ff95d816ff090caf370039ed1f4d7235334f66",
+    "title": "New Business Director",
+    "search": {
+      "text": "\"New Business Director\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-sales-development-head",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Руководитель по развитию продаж",
+    "search": {
+      "text": "\"Руководитель по развитию продаж\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-head-international-sales",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Head of International Sales",
+    "search": {
+      "text": "\"Head of International Sales\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-regional-sales-lead",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "73474175ff08c0e3d10039ed1f745679645442",
+    "title": "Regional Sales Lead",
+    "search": {
+      "text": "\"Regional Sales Lead\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-account-director",
+    "lifecycle": "backfill_60d",
+    "tier": 2,
+    "resume_id": "ff95d816ff090caf370039ed1f4d7235334f66",
+    "title": "Account Director",
+    "search": {
+      "text": "\"Account Director\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-operations-director-ru",
+    "lifecycle": "backfill_60d",
+    "tier": 3,
+    "resume_id": "acfe2732ff101dca8f0039ed1f6d43444e577a",
+    "title": "Операционный директор",
+    "search": {
+      "text": "\"Операционный директор\"",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  },
+  {
+    "id": "backfill-coo",
+    "lifecycle": "backfill_60d",
+    "tier": 3,
+    "resume_id": "acfe2732ff101dca8f0039ed1f6d43444e577a",
+    "title": "COO",
+    "search": {
+      "text": "COO",
+      "work_format": ["REMOTE", "HYBRID"],
+      "employment_form": ["FULL", "PROJECT"],
+      "period": "60",
+      "per_page": "50"
+    }
+  }
+]
