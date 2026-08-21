@@ -45,6 +45,7 @@ class Settings:
     cover_letter: str
     dry_run: bool
     max_applications_per_run: int
+    max_fresh_per_run: int
     request_delay_seconds: float
     skip_if_letter_required: bool
     skip_if_no_response_url: bool
@@ -103,6 +104,7 @@ class Settings:
             cover_letter=os.environ.get("HH_COVER_LETTER", ""),
             dry_run=bool_env("HH_DRY_RUN", True),
             max_applications_per_run=int_env("HH_MAX_APPLICATIONS_PER_RUN", 20),
+            max_fresh_per_run=int_env("HH_MAX_FRESH_PER_RUN", 0),
             request_delay_seconds=float_env("HH_REQUEST_DELAY_SECONDS", 1.0),
             skip_if_letter_required=bool_env("HH_SKIP_IF_LETTER_REQUIRED", True),
             skip_if_no_response_url=bool_env("HH_SKIP_IF_NO_RESPONSE_URL", True),

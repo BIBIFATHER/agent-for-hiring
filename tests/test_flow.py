@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from hh_auto_apply.apply import skip_reason
-from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, mass_basic_relevance_decision, select_segment_template
+from hh_auto_apply.cover_letter import DEFAULT_RULES, build_cover_letter, decision_json, evaluate_vacancy, mass_basic_relevance_decision, mass_card_relevance_decision, select_segment_template
 from hh_auto_apply.browser_apply import browser_search_params, diagnose_click_failure, is_external_ats_url, negotiation_item_to_vacancy, no_card_response_vacancy_page_status, response_flow_status, submit_cover_letter_if_present
 from hh_auto_apply.llm import choose_cover_letter
 from hh_auto_apply.config import Settings
@@ -24,6 +24,7 @@ class FlowTests(unittest.TestCase):
             cover_letter="",
             dry_run=True,
             max_applications_per_run=20,
+            max_fresh_per_run=0,
             request_delay_seconds=0,
             skip_if_letter_required=True,
             skip_if_no_response_url=True,
@@ -61,6 +62,16 @@ class FlowTests(unittest.TestCase):
             log.record(vacancy, "resume-a", "unconfirmed_click")
             self.assertFalse(log.was_processed("1", "resume-a"))
             self.assertFalse(log.was_vacancy_processed("1"))
+            log.close()
+
+    def test_repeated_error_becomes_terminal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            log = ApplicationLog(Path(tmp) / "log.sqlite3")
+            vacancy = {"id": "1", "name": "Role", "employer": {"name": "Company"}}
+            log.record(vacancy, "resume-a", "error")
+            self.assertEqual(log.state_for("1", "resume-a"), {"status": "error", "retry_count": 1})
+            log.record(vacancy, "resume-a", "error")
+            self.assertEqual(log.state_for("1", "resume-a"), {"status": "error_terminal", "retry_count": 2})
             log.close()
 
     def test_log_stores_copy_ready_vacancy_url(self) -> None:
@@ -498,6 +509,27 @@ class FlowTests(unittest.TestCase):
             with self.subTest(title=vacancy["name"]):
                 decision = mass_basic_relevance_decision({**vacancy, "employer": {"name": "Company"}}, DEFAULT_RULES)
                 self.assertEqual(decision.status, "SKIP")
+
+    def test_mass_v1_1_card_decision_marks_target_role_likely_apply(self) -> None:
+        vacancy = {
+            "name": "Коммерческий директор",
+            "snippet": "Управление продажами, командой и ростом выручки.",
+            "employer": {"name": "Company"},
+        }
+        decision = mass_card_relevance_decision(vacancy, DEFAULT_RULES)
+        self.assertEqual(decision.status, "APPROVED")
+        self.assertIn("mass_v1.1", decision.reason)
+        self.assertIn("likely_apply", decision.reason)
+
+    def test_mass_v1_1_card_decision_blocks_hard_skip_before_open(self) -> None:
+        vacancy = {
+            "name": "Менеджер по продажам / KAM",
+            "snippet": "Личные продажи и самостоятельный поиск клиентов.",
+            "employer": {"name": "Company"},
+        }
+        decision = mass_card_relevance_decision(vacancy, DEFAULT_RULES)
+        self.assertEqual(decision.status, "SKIP")
+        self.assertIn("hard", decision.reason)
 
     def test_skip_test_required(self) -> None:
         reason = skip_reason(

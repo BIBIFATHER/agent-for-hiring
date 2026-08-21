@@ -152,6 +152,8 @@ def command_browser_apply(_: argparse.Namespace) -> None:
         "Browser summary: "
         f"seen={stats.seen}, new={stats.new}, dry_run={stats.dry_run}, "
         f"clicked={stats.clicked}, manual_required={stats.manual_required}, "
+        f"filtered_before_open={stats.filtered_before_open}, "
+        f"pages_opened={stats.pages_opened}, likely_apply={stats.likely_apply}, "
         f"external_ats_skip={stats.external_ats_skip}, "
         f"already_applied={stats.already_applied}, "
         f"unconfirmed_click={stats.unconfirmed_click}, "

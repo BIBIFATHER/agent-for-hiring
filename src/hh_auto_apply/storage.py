@@ -64,6 +64,7 @@ class ApplicationLog:
                 response_status INTEGER,
                 response_body TEXT,
                 funnel_status TEXT,
+                retry_count INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 PRIMARY KEY (vacancy_id, resume_id)
@@ -91,6 +92,7 @@ class ApplicationLog:
             ("cover_letter", "TEXT"),
             ("hh_negotiation_id", "TEXT"),
             ("funnel_status", "TEXT"),
+            ("retry_count", "INTEGER NOT NULL DEFAULT 0"),
         ]:
             try:
                 self.conn.execute(f"ALTER TABLE applications ADD COLUMN {column} {ddl}")
@@ -149,6 +151,18 @@ class ApplicationLog:
             (vacancy_id, resume_id),
         ).fetchone()
         return str(row["status"]) if row is not None else None
+
+    def state_for(self, vacancy_id: str, resume_id: str) -> dict[str, Any] | None:
+        row = self.conn.execute(
+            """
+            SELECT status, retry_count FROM applications
+            WHERE vacancy_id = ? AND resume_id = ?
+            """,
+            (vacancy_id, resume_id),
+        ).fetchone()
+        if row is None:
+            return None
+        return {"status": str(row["status"]), "retry_count": int(row["retry_count"] or 0)}
 
     def was_vacancy_processed(self, vacancy_id: str) -> bool:
         row = self.conn.execute(
@@ -233,14 +247,26 @@ class ApplicationLog:
         vacancy_id = str(vacancy["id"])
         url = vacancy_markdown_url(vacancy_id)
         vacancy_fingerprint = self.compute_vacancy_fingerprint(vacancy)
+        retry_count = 0
+        if status == "error":
+            existing = self.conn.execute(
+                """
+                SELECT retry_count FROM applications
+                WHERE vacancy_id = ? AND resume_id = ?
+                """,
+                (vacancy_id, resume_id),
+            ).fetchone()
+            retry_count = int(existing["retry_count"] or 0) + 1 if existing else 1
+            if retry_count >= 2:
+                status = "error_terminal"
         self.conn.execute(
             """
             INSERT INTO applications (
                 vacancy_id, resume_id, vacancy_fingerprint, status, vacancy_name, employer_name, url,
                 reason, decision_reason, agent_decision, user_decision, fit_score, cover_letter, hh_negotiation_id,
-                response_status, response_body, funnel_status, created_at, updated_at
+                response_status, response_body, funnel_status, retry_count, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(vacancy_id, resume_id) DO UPDATE SET
                 vacancy_fingerprint=excluded.vacancy_fingerprint,
                 status=excluded.status,
@@ -254,6 +280,7 @@ class ApplicationLog:
                 response_status=excluded.response_status,
                 response_body=excluded.response_body,
                 funnel_status=excluded.funnel_status,
+                retry_count=excluded.retry_count,
                 updated_at=excluded.updated_at
             """,
             (
@@ -274,6 +301,7 @@ class ApplicationLog:
                 response_status,
                 response_body[:4000],
                 funnel_status or status,
+                retry_count,
                 now,
                 now,
             ),
@@ -298,6 +326,7 @@ class ApplicationLog:
                 "response_status": response_status,
                 "response_body": response_body[:4000],
                 "funnel_status": funnel_status or status,
+                "retry_count": retry_count,
                 "updated_at": now,
             }
         )

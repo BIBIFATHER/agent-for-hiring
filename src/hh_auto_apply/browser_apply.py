@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlencode
 
-from .cover_letter import evaluate_vacancy, load_rules, mass_basic_relevance_decision
+from .cover_letter import evaluate_vacancy, load_rules, mass_basic_relevance_decision, mass_card_relevance_decision
 from .llm import choose_cover_letter
 from .storage import ApplicationLog
 
@@ -56,6 +56,9 @@ class BrowserStats:
     already_applied: int = 0
     frequent_response_warning: int = 0
     unconfirmed_click: int = 0
+    filtered_before_open: int = 0
+    pages_opened: int = 0
+    likely_apply: int = 0
 
 
 def ensure_playwright() -> Any:
@@ -316,19 +319,33 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                     for card in cards:
                         stats.seen += 1
                         vacancy_id = card["id"]
-                        if selection_mode == "mass_v1" and log.status_for(vacancy_id, resume_key) in {
+                        state = log.state_for(vacancy_id, resume_key)
+                        state_status = state["status"] if state else None
+                        retry_count = int(state["retry_count"] if state else 0)
+                        if selection_mode in {"mass_v1", "mass_v1.1"} and state_status in {
                             "applied",
                             "already_applied",
                             "manual_required",
-                            "error",
+                            "error_terminal",
                             "external_ats_skip",
                             "frequent_response_warning",
                             "unconfirmed_click",
                         }:
+                            stats.filtered_before_open += 1
+                            continue
+                        if selection_mode == "mass_v1.1" and state_status == "skipped":
+                            stats.filtered_before_open += 1
+                            continue
+                        if selection_mode == "mass_v1.1" and state_status == "error" and retry_count >= 2:
+                            stats.filtered_before_open += 1
                             continue
                         if log.was_processed(vacancy_id, resume_key) or log.was_vacancy_processed(vacancy_id):
+                            stats.filtered_before_open += 1
                             continue
                         stats.new += 1
+                        max_fresh_per_run = int(getattr(settings, "max_fresh_per_run", 0) or 0)
+                        if max_fresh_per_run and stats.new > max_fresh_per_run:
+                            break
 
                         reason_prefix = f"{profile['title']}: "
                         vacancy = {
@@ -336,29 +353,40 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                             "name": card["name"],
                             "employer": {"name": card["employer"]},
                             "alternate_url": card["url"],
+                            "snippet": card.get("snippet", ""),
+                            "salary": card.get("salary", ""),
+                            "published_at": card.get("published_at", ""),
                         }
                         fingerprint = log.compute_vacancy_fingerprint(vacancy)
                         fingerprint_processed = (
-                            log.was_fingerprint_processed(fingerprint)
-                            if selection_mode == "mass_v1"
+                            log.was_fingerprint_processed(fingerprint) if selection_mode in {"mass_v1", "mass_v1.1"}
                             else log.was_fingerprint_seen(fingerprint)
                         )
                         if fingerprint_processed:
+                            stats.filtered_before_open += 1
                             continue
-                        decision = evaluate_vacancy(vacancy, rules)
+                        if selection_mode == "mass_v1.1":
+                            decision = mass_card_relevance_decision(vacancy, rules)
+                        else:
+                            decision = evaluate_vacancy(vacancy, rules)
                         if decision.status == "SKIP" and selection_mode == "mass_v1":
                             decision = mass_decision_with_page_fallback(page, vacancy, card, rules)
                         if decision.status == "SKIP":
                             log.record(vacancy, resume_key, "skipped", reason=reason_prefix + decision.reason)
                             stats.skipped += 1
+                            if selection_mode == "mass_v1.1":
+                                stats.filtered_before_open += 1
                             print(f"SKIP {vacancy_id}: {decision.reason}")
                             continue
+                        if selection_mode == "mass_v1.1":
+                            stats.likely_apply += 1
                         if not card["can_apply"]:
                             if not goto_with_retry(page, card["url"]):
                                 log.record(vacancy, resume_key, "error", reason=reason_prefix + "vacancy page navigation failed")
                                 stats.errors += 1
                                 print(f"ERROR {vacancy_id}: vacancy page navigation failed")
                                 continue
+                            stats.pages_opened += 1
                             wait_like_human(page)
                             vacancy["page_text"] = extract_vacancy_page_text(page)
                             if handle_captcha_pause(page):
@@ -415,6 +443,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                 stats.errors += 1
                                 print(f"ERROR {vacancy_id}: vacancy page navigation failed")
                                 continue
+                            stats.pages_opened += 1
                             wait_like_human(page)
                             vacancy["page_text"] = extract_vacancy_page_text(page)
                             if handle_captcha_pause(page):
@@ -551,6 +580,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                 stats.errors += 1
                                 print(f"ERROR {vacancy_id}: navigation failed")
                                 continue
+                            stats.pages_opened += 1
                             wait_like_human(page)
                             vacancy["page_text"] = extract_vacancy_page_text(page)
                             if handle_captcha_pause(page):
@@ -685,6 +715,12 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                         time.sleep(settings.request_delay_seconds)
                     if total_applications >= settings.max_applications_per_run:
                         break
+                    max_fresh_per_run = int(getattr(settings, "max_fresh_per_run", 0) or 0)
+                    if max_fresh_per_run and stats.new >= max_fresh_per_run:
+                        break
+                max_fresh_per_run = int(getattr(settings, "max_fresh_per_run", 0) or 0)
+                if max_fresh_per_run and stats.new >= max_fresh_per_run:
+                    break
         finally:
             context.close()
             if temp_dir is not None:
@@ -702,6 +738,9 @@ def extract_cards(page: Any) -> list[dict[str, Any]]:
             const url = link ? link.href : '';
             const match = url.match(/vacancy\\/(\\d+)/) || url.match(/vacancyId=(\\d+)/);
             const employer = item.querySelector('[data-qa="vacancy-serp__vacancy-employer-text"], [data-qa="vacancy-serp__vacancy-employer"]');
+            const salary = item.querySelector('[data-qa="vacancy-serp__vacancy-compensation"], [data-qa="vacancy-serp__vacancy-salary"]');
+            const snippet = item.querySelector('[data-qa="vacancy-serp__vacancy_snippet_responsibility"], [data-qa="vacancy-serp__vacancy_snippet_requirement"], [data-qa*="vacancy_snippet"]');
+            const publication = item.querySelector('[data-qa="vacancy-serp__vacancy-date"], [data-qa*="vacancy-date"]');
             const response = match
               ? item.querySelector(`a[data-qa="vacancy-serp__vacancy_response"][href*="vacancyId=${match[1]}"], a[href*="vacancy_response"][href*="vacancyId=${match[1]}"], button[data-qa*="vacancy_response"][data-qa*="vacancyId=${match[1]}"]`) ||
                 document.querySelector(`a[data-qa="vacancy-serp__vacancy_response"][href*="vacancyId=${match[1]}"], a[href*="vacancy_response"][href*="vacancyId=${match[1]}"], button[data-qa*="vacancy_response"][data-qa*="vacancyId=${match[1]}"]`)
@@ -712,6 +751,9 @@ def extract_cards(page: Any) -> list[dict[str, Any]]:
               name: link ? (link.innerText || link.textContent || '').trim() : '',
               employer: employer ? (employer.innerText || employer.textContent || '').trim() : '',
               url,
+              salary: salary ? (salary.innerText || salary.textContent || '').trim() : '',
+              snippet: snippet ? (snippet.innerText || snippet.textContent || '').trim() : '',
+              published_at: publication ? (publication.innerText || publication.textContent || '').trim() : '',
               response_url: response ? response.href : '',
               can_apply: /Откликнуться|Отклик|Respond|Apply/i.test(responseText)
             };

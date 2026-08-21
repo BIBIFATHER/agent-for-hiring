@@ -519,6 +519,41 @@ def mass_basic_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any]
     return CoverLetterDecision("SKIP", None, "mass basic relevance not matched")
 
 
+def mass_card_relevance_decision(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:
+    rules = rules or DEFAULT_RULES
+    title = str(vacancy.get("name", "")).lower()
+    snippet = str(vacancy.get("snippet", "") or vacancy.get("responsibility", "") or "").lower()
+    employer = vacancy.get("employer") or {}
+    company = str(employer.get("name", "") if isinstance(employer, dict) else employer).lower()
+    text = " ".join([title, snippet, company])
+
+    for pattern in MASS_HARD_TITLE_PATTERNS:
+        if pattern in title:
+            return CoverLetterDecision("SKIP", None, f"mass_v1.1 hard title exclusion: {pattern}")
+    for pattern in MASS_HARD_TEXT_PATTERNS:
+        if pattern in text:
+            return CoverLetterDecision("SKIP", None, f"mass_v1.1 hard exclusion: {pattern}")
+
+    if any(pattern in title for pattern in MASS_TARGET_TITLE_PATTERNS):
+        return CoverLetterDecision(
+            "APPROVED",
+            build_cover_letter(rules, vacancy),
+            "selection_mode=mass_v1.1; decision=likely_apply; source=card; scenario=target_role",
+        )
+
+    adjacent_title = any(pattern in title for pattern in MASS_ADJACENT_TITLE_PATTERNS)
+    basic_scope = [pattern for pattern in MASS_BASIC_SCOPE_PATTERNS if pattern in text]
+    if adjacent_title and basic_scope:
+        return CoverLetterDecision(
+            "APPROVED",
+            build_cover_letter(rules, vacancy),
+            "selection_mode=mass_v1.1; decision=likely_apply; source=card; scenario=adjacent_role; basic_scope="
+            + ",".join(basic_scope[:8]),
+        )
+
+    return CoverLetterDecision("SKIP", None, "mass_v1.1 card relevance not matched")
+
+
 def evaluate_vacancy(vacancy: dict[str, Any], rules: dict[str, Any] | None = None) -> CoverLetterDecision:
     rules = rules or DEFAULT_RULES
     title = str(vacancy.get("name", "")).lower()
