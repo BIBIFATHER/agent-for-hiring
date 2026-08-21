@@ -8,6 +8,7 @@ import random
 import shutil
 import tempfile
 import time
+import sys
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlencode
@@ -1123,6 +1124,8 @@ def wait_like_human(page: Any) -> None:
 def handle_captcha_pause(page: Any) -> bool:
     while captcha_present(page):
         print("\a", end="", flush=True)
+        if not sys.stdin.isatty():
+            return True
         print("Captcha detected. Solve it in the browser, then press Enter here.")
         input()
         page.wait_for_timeout(1000)
