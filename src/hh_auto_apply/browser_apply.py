@@ -341,6 +341,7 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                             log.record(vacancy, resume_key, "browser_dry_run", reason=reason_prefix + "browser dry run, no click sent")
                             stats.dry_run += 1
                             total_applications += 1
+                            letter_decision = type("LetterDecision", (), {"cover_letter": "", "source": "dry_run", "reason": "browser dry run"})()
                             print(f"DRY {vacancy_id}: {card['name']}")
                         else:
                             letter_decision = choose_cover_letter(settings, log, vacancy, rules)
