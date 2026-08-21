@@ -248,6 +248,20 @@ def apply_one_queue_item(
             return
 
         submit_result = submit_cover_letter_if_present(page, cover_letter)
+        if submit_result == "manual_required":
+            close_response_modal(page)
+            favorite_added = add_to_favorites(page, vacancy_id)
+            reason = reason_prefix + "manual task/questions required"
+            if favorite_added:
+                reason += "; added to favorites"
+            log.record(vacancy, resume_id, "manual_required", reason=reason)
+            stats.manual_required += 1
+            finish_opened(stats, started)
+            result = result_entry(item, "manual_required", reason)
+            stats.results.append(result)
+            mark_progress(progress_path, progress, vacancy_id, result)
+            print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
+            return
         if submit_result == "submitted":
             handle_captcha_pause(page)
             status_after_submit = response_flow_status(page)

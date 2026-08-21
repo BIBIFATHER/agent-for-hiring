@@ -513,6 +513,15 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                 continue
 
                             submit_result = submit_cover_letter_if_present(page, cover_letter)
+                            if submit_result == "manual_required":
+                                favorite_added = add_to_favorites(page, vacancy_id)
+                                reason = reason_prefix + "manual task/questions required"
+                                if favorite_added:
+                                    reason += "; added to favorites"
+                                log.record(vacancy, resume_key, "manual_required", reason=reason)
+                                stats.manual_required += 1
+                                print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
+                                continue
                             if submit_result == "submitted":
                                 handle_captcha_pause(page)
                                 status_after_submit = response_flow_status(page)
@@ -646,6 +655,16 @@ def browser_apply(settings: Any, log: ApplicationLog) -> BrowserStats:
                                         total_applications += 1
                                         print(f"APPLIED {vacancy_id}: {card['name']}")
                                         continue
+                                elif submit_result == "manual_required":
+                                    close_response_modal(page)
+                                    favorite_added = add_to_favorites(page, vacancy_id)
+                                    reason = reason_prefix + "manual task/questions required"
+                                    if favorite_added:
+                                        reason += "; added to favorites"
+                                    log.record(vacancy, resume_key, "manual_required", reason=reason)
+                                    stats.manual_required += 1
+                                    print(f"MANUAL {vacancy_id}: task/questions, favorite={'yes' if favorite_added else 'no'}")
+                                    continue
                                 elif submit_result == "needs_manual_submit":
                                     confirmation = wait_for_hh_confirmation(page)
                                     if confirmation in {"applied", "already_applied"}:
@@ -1022,8 +1041,8 @@ def submit_cover_letter_if_present(page: Any, cover_letter: str) -> str:
             except Exception:
                 continue
 
-    if fill_response_questions_if_present(page):
-        page.wait_for_timeout(1200)
+    if response_questions_present(page):
+        return "manual_required"
 
     for selector in [
         'button[data-qa="vacancy-response-submit-popup"]',
@@ -1048,7 +1067,7 @@ def submit_cover_letter_if_present(page: Any, cover_letter: str) -> str:
     return "needs_manual_submit"
 
 
-def fill_response_questions_if_present(page: Any) -> bool:
+def response_questions_present(page: Any) -> bool:
     try:
         body = page.locator("body").inner_text(timeout=1500).lower()
     except Exception:
@@ -1063,41 +1082,19 @@ def fill_response_questions_if_present(page: Any) -> bool:
     ]
     if not any(marker in body for marker in question_markers):
         return False
-    answers = response_question_answers()
     try:
         textareas = page.locator("textarea")
         count = textareas.count()
     except Exception:
         return False
-    visible = []
     for index in range(count):
         try:
             textarea = textareas.nth(index)
             if textarea.is_visible(timeout=500):
-                visible.append(textarea)
+                return True
         except Exception:
             continue
-    if not visible:
-        return False
-    for index, textarea in enumerate(visible):
-        answer = answers[min(index, len(answers) - 1)]
-        try:
-            textarea.click(timeout=1000)
-            textarea.fill("")
-            textarea.type(answer, delay=random.randint(8, 16))
-        except Exception:
-            try:
-                textarea.fill(answer)
-            except Exception:
-                continue
-        try:
-            textarea.dispatch_event("input")
-            textarea.dispatch_event("change")
-            textarea.blur()
-        except Exception:
-            pass
-    page.wait_for_timeout(400)
-    return True
+    return False
 
 
 def wait_for_hh_confirmation(page: Any) -> str:
@@ -1154,15 +1151,6 @@ def click_locator_with_retry(page: Any, locator: Any) -> bool:
         return True
     except Exception:
         return False
-
-
-def response_question_answers() -> list[str]:
-    return [
-        "Да, выстраивал отдел продаж с нуля: воронка, CRM, KPI, регламенты, найм и контроль качества.",
-        "Да, работал в консультационных и демо-продажах, вел диагностики и закрывал сделки.",
-        "Да, контролировал ФОТ, бонусы, издержки и экономику направления, работал с P&L.",
-        "Смотрю на источники, качество лидов, скрипты, подтверждение записи, напоминания и ежедневный разбор причин.",
-    ]
 
 
 def type_cover_letter(textarea: Any, cover_letter: str, page: Any) -> None:

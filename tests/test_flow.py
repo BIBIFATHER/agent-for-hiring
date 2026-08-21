@@ -262,7 +262,7 @@ class FlowTests(unittest.TestCase):
             def inner_text(self, timeout: int) -> str:
                 if self.page.clicked and self.page.elapsed_ms >= 1500:
                     return "Вы откликнулись. Отклик отправлен."
-                return "Ответьте на вопросы работодателя"
+                return "Сопроводительное письмо"
 
         class ButtonLocator:
             def __init__(self, page: "Page") -> None:
@@ -311,6 +311,66 @@ class FlowTests(unittest.TestCase):
                 return "https://hh.ru/applicant/vacancy_response?vacancyId=1"
 
         self.assertEqual(submit_cover_letter_if_present(Page(), ""), "submitted")
+
+    def test_response_questions_are_manual_required_without_autofill(self) -> None:
+        class BodyLocator:
+            def inner_text(self, timeout: int) -> str:
+                return "Ответьте на вопросы работодателя"
+
+        class TextareaLocator:
+            def __init__(self, page: "Page") -> None:
+                self.page = page
+
+            @property
+            def first(self):
+                return self
+
+            def count(self) -> int:
+                return 1
+
+            def nth(self, index: int):
+                return self
+
+            def is_visible(self, timeout: int) -> bool:
+                return True
+
+            def click(self, timeout: int) -> None:
+                self.page.textarea_touched = True
+
+            def fill(self, value: str) -> None:
+                self.page.textarea_touched = True
+
+            def type(self, value: str, delay: int) -> None:
+                self.page.textarea_touched = True
+
+        class ButtonLocator:
+            @property
+            def first(self):
+                return self
+
+            def count(self) -> int:
+                return 0
+
+            def is_visible(self, timeout: int) -> bool:
+                return False
+
+        class Page:
+            def __init__(self) -> None:
+                self.textarea_touched = False
+
+            def get_by_text(self, text: str, exact: bool = False) -> ButtonLocator:
+                return ButtonLocator()
+
+            def locator(self, selector: str):
+                if selector == "body":
+                    return BodyLocator()
+                if selector == "textarea":
+                    return TextareaLocator(self)
+                return ButtonLocator()
+
+        page = Page()
+        self.assertEqual(submit_cover_letter_if_present(page, ""), "manual_required")
+        self.assertFalse(page.textarea_touched)
 
     def test_already_applied_response_page_short_circuits_without_cover_letter(self) -> None:
         class BodyLocator:
