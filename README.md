@@ -179,6 +179,16 @@ If a response flow shows a task, test, or mandatory employer questions, browser 
 Before clicking the response button in real mode, browser automation opens the vacancy page, scrolls it, waits a random 3-7 seconds, and pauses for manual captcha solving if HH shows captcha/Cloudflare/Qrator checks.
 Cover letters are typed with small per-character delays and explicit `input/change/blur` events so HH's frontend enables the submit button reliably.
 
+Current operational policy:
+
+- run backfill/application batches in groups of 20-30 vacancies;
+- run `browser-sync` once at the start of a work session, then after 3-5 batches or at the end of the session;
+- do not run `browser-sync` before every batch unless there is a specific reason;
+- record `manual_required`, `already_applied`, and `error`, then immediately move to the next vacancy;
+- do not change code during a batch;
+- make code changes only after a separate reproducible failure;
+- optimize for `new applied per 100 processed`, not for the number of opened pages.
+
 Special browser statuses:
 
 - `external_ats_skip`: HH redirected the response flow to an external ATS domain; the external tab is closed when possible.
